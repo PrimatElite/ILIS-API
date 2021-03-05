@@ -1,0 +1,7 @@
+Flask
+Flask-Cors
+flask-restplus
+Flask-SQLAlchemy
+jsonschema
+python-dateutil
+Werkzeug==0.16.1
