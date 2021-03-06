@@ -4,8 +4,8 @@ from os import environ
 
 
 class Environment:
-    SCHEME = environ.get("SCHEME", "http")
-    HOST = environ.get("HOST", "127.0.0.1:5000")
+    SCHEME = environ.get('SCHEME', 'http')
+    HOST = environ.get('HOST', '127.0.0.1:5000')
     DB_USER = environ['DB_USER']
     DB_PASSWD = environ['DB_PASSWD']
     DB_HOST = environ['DB_HOST']
