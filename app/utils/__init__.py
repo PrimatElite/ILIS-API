@@ -13,7 +13,7 @@ def get_version() -> str:
 
 
 def get_db_initialization() -> dict:
-    with open(os.path.join('..', 'models', 'db_initialization.json')) as db_initialization_file:
+    with open(os.path.join('app', 'models', 'db_initialization.json')) as db_initialization_file:
         return json.load(db_initialization_file)
 
 

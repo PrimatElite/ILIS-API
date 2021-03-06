@@ -11,7 +11,7 @@ class Users(Base):
     __tablename__ = 'users'
 
     user_id = Column(Integer, seq, primary_key=True)
-    login_id = Column(Integer, nullable=False)
+    login_id = Column(String, nullable=False)
     login_type = Column(Enum(EnumLoginService), nullable=False)
     name = Column(String)
     surname = Column(String)
@@ -33,7 +33,7 @@ class Users(Base):
     def get_user_by_id(cls, user_id):
         return cls.orm2dict(cls.query.filter_by(user_id=user_id).first())
 
-    get_item_by_id = get_user_by_id
+    get_obj_by_id = get_user_by_id
 
     @classmethod
     def get_user_by_login(cls, login_id, login_type):

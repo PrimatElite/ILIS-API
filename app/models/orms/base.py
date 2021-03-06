@@ -22,7 +22,7 @@ class Base(db.Model):
         return datetime.utcnow() + timedelta(hours=3)
 
     @classmethod
-    def get_item_by_id(cls, item_id: int) -> 'Base':
+    def get_obj_by_id(cls, obj_id: int) -> 'Base':
         pass
 
     @classmethod
@@ -34,37 +34,37 @@ class Base(db.Model):
         return list(cls.__table__.columns.keys())
 
     @classmethod
-    def get_additional_fields(cls, item_id: int, fields: List[str] = None) -> dict:
-        result = OrderedDict([(cls.get_id_name(), item_id)])
+    def get_additional_fields(cls, obj_id: int, fields: List[str] = None) -> dict:
+        result = OrderedDict([(cls.get_id_name(), obj_id)])
         if fields is None:
             fields = cls.additional_fields.keys()
         for field, func in cls.additional_fields.items():
             if field in fields:
-                result.update({field: func(item_id)})
+                result.update({field: func(obj_id)})
         return result
 
     @classmethod
-    def orm2dict(cls, item: Union['Base', None], fields: List[str] = None) -> Union[dict, None]:
+    def orm2dict(cls, obj: Union['Base', None], fields: List[str] = None) -> Union[dict, None]:
         def dictionate_entity(entity):
             if isinstance(entity, datetime):
                 return datetime2str(entity)
             else:
                 return entity
 
-        if item is None:
+        if obj is None:
             return None
         columns = cls.get_columns_names()
         if fields is None:
             fields = columns
-        return OrderedDict([(field, dictionate_entity(getattr(item, field))) for field in fields if field in columns])
+        return OrderedDict([(field, dictionate_entity(getattr(obj, field))) for field in fields if field in columns])
 
     @classmethod
     def dict2cls(cls, data: dict, merge: bool = True) -> 'Base':
-        item = cls()
-        item._update_fields(data, cls.get_columns_names())
+        obj = cls()
+        obj._update_fields(data, cls.get_columns_names())
         if merge:
-            return db.session.merge(item)
-        return item
+            return db.session.merge(obj)
+        return obj
 
     def _update_fields(self, data: dict, fields: list) -> 'Base':
         for field in fields:
@@ -94,14 +94,14 @@ class Base(db.Model):
         pass
 
     @classmethod
-    def delete(cls, item_id: int) -> Union['Base', None]:
-        item_dict = cls.get_item_by_id(item_id)
-        if item_dict:
-            item = cls.dict2cls(item_dict)
-            item._before_deletion()
-            item_id = getattr(item, cls.get_id_name())
+    def delete(cls, obj_id: int) -> Union['Base', None]:
+        obj_dict = cls.get_obj_by_id(obj_id)
+        if obj_dict:
+            obj = cls.dict2cls(obj_dict)
+            obj._before_deletion()
+            obj_id = getattr(obj, cls.get_id_name())
             for delete_func in cls.delete_relation_funcs:
-                delete_func(item_id)
-            item.delete_self()
-            return item_dict
+                delete_func(obj_id)
+            obj.delete_self()
+            return obj_dict
         return None

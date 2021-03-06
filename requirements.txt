@@ -3,5 +3,6 @@ Flask-Cors
 flask-restplus
 Flask-SQLAlchemy
 jsonschema
+psycopg2
 python-dateutil
 Werkzeug==0.16.1
