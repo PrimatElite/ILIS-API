@@ -1,4 +1,4 @@
-from flask import Blueprint, url_for
+from flask import Blueprint, Flask, url_for
 from flask_restplus import Api, fields
 from flask_restplus.apidoc import apidoc
 from jsonschema import FormatChecker
@@ -8,10 +8,10 @@ from ..utils import get_version
 from ..config import Environment
 
 
-def validate_datetime(instance):
+def validate_datetime(instance: str):
     if not isinstance(instance, str):
         return False
-    return fields.date_from_iso8601(instance)
+    return fields.datetime_from_iso8601(instance)
 
 
 FormatChecker.cls_checks('date-time', ValueError)(validate_datetime)
@@ -27,7 +27,7 @@ class ApiScheme(Api):
 AUTHORIZATIONS = {}
 
 
-def init_app(app):
+def init_app(app: Flask):
     apidoc.url_prefix = app.config['URL_PREFIX']
     blueprint = Blueprint('api', __name__, url_prefix=app.config['URL_PREFIX'])
     api = ApiScheme(blueprint, version=get_version(), title='ILIS API', description='API for ILIS',
