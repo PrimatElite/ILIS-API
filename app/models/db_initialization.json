@@ -1,0 +1,16 @@
+{
+  "admins": [
+    {
+      "login_id": 108835001018952503640,
+      "login_type": "GOOGLE"
+    },
+    {
+      "login_id": 118352136734861394903,
+      "login_type": "GOOGLE"
+    },
+    {
+      "login_id": 0,
+      "login_type": "GOOGLE"
+    }
+  ]
+}
