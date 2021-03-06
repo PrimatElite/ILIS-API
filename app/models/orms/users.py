@@ -53,7 +53,7 @@ class Users(Base):
         if user_dict:
             if not cls._need_to_update(data):
                 return user_dict
-            user = cls.dict2cls(user_dict)._update_fields(user_dict, cls.simple_fields_to_update).add()
+            user = cls.dict2cls(user_dict)._update_fields(data, cls.simple_fields_to_update).add()
             user_dict = cls.orm2dict(user)
         return user_dict
 

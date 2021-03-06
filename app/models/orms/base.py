@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from datetime import datetime, timedelta
 from dateutil import parser
+from enum import Enum
 from typing import List, Union
 
 from ...utils import any_in, datetime2str, validate_iso8601
@@ -48,6 +49,8 @@ class Base(db.Model):
         def dictionate_entity(entity):
             if isinstance(entity, datetime):
                 return datetime2str(entity)
+            elif isinstance(entity, Enum):
+                return entity.name
             else:
                 return entity
 
@@ -69,9 +72,12 @@ class Base(db.Model):
     def _update_fields(self, data: dict, fields: list) -> 'Base':
         for field in fields:
             if field in data:
-                if self.__table__.columns[field].type.python_type == datetime:
+                field_type = self.__table__.columns[field].type.python_type
+                if field_type == datetime:
                     if validate_iso8601(data[field]):
                         setattr(self, field, parser.parse(data[field]))
+                elif issubclass(field_type, Enum):
+                    setattr(self, field, field_type[data[field]])
                 else:
                     setattr(self, field, data[field])
         return self
