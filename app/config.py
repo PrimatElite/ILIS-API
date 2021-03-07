@@ -11,6 +11,8 @@ class Environment:
     DB_HOST = environ['DB_HOST']
     DB_PORT = environ['DB_PORT']
     DB_NAME = environ['DB_NAME']
+    GOOGLE_CLIENT_SECRET = environ['GOOGLE_CLIENT_SECRET']
+    VK_CLIENT_SECRET = environ['VK_CLIENT_SECRET']
 
 
 class Config:
@@ -27,3 +29,9 @@ class Config:
 
     URL_PREFIX = '/api'
     DOC_URL = '/swagger'
+
+    GOOGLE_CLIENT_ID = '674406560132-d8etms30a82chl3qb72o0ard0auha3b7.apps.googleusercontent.com'
+    GOOGLE_CLIENT_SECRET = Environment.GOOGLE_CLIENT_SECRET
+
+    VK_CLIENT_ID = '7783375'
+    VK_CLIENT_SECRET = Environment.VK_CLIENT_SECRET
