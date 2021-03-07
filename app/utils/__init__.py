@@ -3,6 +3,7 @@ import os
 
 from datetime import datetime
 from dateutil import parser
+from flask_restplus import marshal as marshal_
 from typing import Iterable
 
 
@@ -38,3 +39,7 @@ def str2bool(value: str) -> bool:
     if value.isdigit():
         return False if int(value) == 0 else True
     return False if value.lower() == 'false' else True
+
+
+def marshal(data: dict, fields: dict) -> dict:
+    return marshal_(data, fields, skip_none=True)

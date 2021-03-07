@@ -1,7 +1,8 @@
-from flask_restplus import marshal, Resource
+from flask_restplus import Resource
 from http import HTTPStatus
 
 from ..models import Users
+from ..utils import marshal
 from ..utils.auth import check_admin, get_service_from_request, get_token_from_request, get_user_from_request, \
     token_required
 from ..utils.swagger_models import UsersModels
