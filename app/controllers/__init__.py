@@ -3,6 +3,7 @@ from flask_restplus import Api, fields
 from flask_restplus.apidoc import apidoc
 from jsonschema import FormatChecker
 
+from . import auth_controller
 from . import default_controller
 from . import users_controller
 from ..utils import get_version
@@ -36,6 +37,7 @@ def init_app(app: Flask):
                     format_checker=FormatChecker(formats=['date-time']))
 
     api.add_namespace(default_controller.api, path='/')
+    api.add_namespace(auth_controller.api)
     api.add_namespace(users_controller.api)
 
     app.register_blueprint(blueprint)

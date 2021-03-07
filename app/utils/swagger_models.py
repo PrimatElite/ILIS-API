@@ -43,3 +43,13 @@ class UsersModels:
         'created_at': fields.DateTime(description='The user created datetime'),
         'updated_at': fields.DateTime(description='The user updated datetime')
     })
+
+
+class AuthModels:
+    api = Namespace('auth', description='Auth operations')
+    access_token = api.model('access_token', {
+        'access_token': fields.String(required=True, descriprion='The access token'),
+        'refresh_token': fields.String(descriprion='The refresh token'),
+        'expires_in': fields.Integer(description='The token expires in'),
+        'user': fields.Nested(UsersModels.user, required=True, description='The user related to access token')
+    })
