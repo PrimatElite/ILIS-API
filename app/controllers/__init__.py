@@ -1,17 +1,19 @@
-from flask import Blueprint, url_for
+from flask import Blueprint, Flask, url_for
 from flask_restplus import Api, fields
 from flask_restplus.apidoc import apidoc
 from jsonschema import FormatChecker
 
+from . import auth_controller
 from . import default_controller
+from . import users_controller
 from ..utils import get_version
 from ..config import Environment
 
 
-def validate_datetime(instance):
+def validate_datetime(instance: str):
     if not isinstance(instance, str):
         return False
-    return fields.date_from_iso8601(instance)
+    return fields.datetime_from_iso8601(instance)
 
 
 FormatChecker.cls_checks('date-time', ValueError)(validate_datetime)
@@ -24,10 +26,16 @@ class ApiScheme(Api):
         return url_for(self.endpoint('specs'), _external=True, _scheme=scheme)
 
 
-AUTHORIZATIONS = {}
+AUTHORIZATIONS = {
+    'access-token': {
+        'type': 'apiKey',
+        'in': 'header',
+        'name': 'authorization'
+    }
+}
 
 
-def init_app(app):
+def init_app(app: Flask):
     apidoc.url_prefix = app.config['URL_PREFIX']
     blueprint = Blueprint('api', __name__, url_prefix=app.config['URL_PREFIX'])
     api = ApiScheme(blueprint, version=get_version(), title='ILIS API', description='API for ILIS',
@@ -35,5 +43,7 @@ def init_app(app):
                     format_checker=FormatChecker(formats=['date-time']))
 
     api.add_namespace(default_controller.api, path='/')
+    api.add_namespace(auth_controller.api)
+    api.add_namespace(users_controller.api)
 
     app.register_blueprint(blueprint)
