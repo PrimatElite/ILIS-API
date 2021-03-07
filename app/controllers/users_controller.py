@@ -1,8 +1,7 @@
-from flask_restplus import Resource
+from flask_restplus import marshal, Resource
 from http import HTTPStatus
 
 from ..models import Users
-from ..utils import marshal
 from ..utils.auth import check_admin, get_service_from_request, get_token_from_request, get_user_from_request, \
     token_required
 from ..utils.swagger_models import UsersModels
@@ -36,7 +35,7 @@ class UsersApi(Resource):
         """Create new user"""
         requester = get_user_from_request(api)
         check_admin(api, requester)
-        user = Users.create(marshal(api.payload, UsersModels.create_user))
+        user = Users.create(marshal(api.payload, UsersModels.create_user, skip_none=True))
         return user, 201
 
     @api.doc('update_user')
@@ -51,7 +50,7 @@ class UsersApi(Resource):
         """Update user"""
         requester = get_user_from_request(api)
         check_admin(api, requester)
-        data = marshal(api.payload, UsersModels.update_user)
+        data = marshal(api.payload, UsersModels.update_user, skip_none=True)
         user = Users.update(data)
         if user:
             return user
@@ -93,7 +92,7 @@ class UsersMeApi(Resource):
     def put(self):
         """Update user by token"""
         requester = get_user_from_request(api)
-        data = marshal(api.payload, UsersModels.update_user_me)
+        data = marshal(api.payload, UsersModels.update_user_me, skip_none=True)
         data['user_id'] = requester['user_id']
         return Users.update(data)
 
