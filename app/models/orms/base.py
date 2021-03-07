@@ -102,7 +102,7 @@ class Base(db.Model):
     @classmethod
     def delete(cls, obj_id: int) -> Union['Base', None]:
         obj_dict = cls.get_obj_by_id(obj_id)
-        if obj_dict:
+        if obj_dict is not None:
             obj = cls.dict2cls(obj_dict)
             obj._before_deletion()
             obj_id = getattr(obj, cls.get_id_name())

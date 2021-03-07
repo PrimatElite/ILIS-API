@@ -22,7 +22,7 @@ class Users(Base):
     created_at = Column(DateTime, default=Base.now)
     updated_at = Column(DateTime, default=Base.now, onupdate=Base.now)
 
-    fields_to_update = ['name', 'surname', 'role', 'email', 'phone']
+    fields_to_update = ['name', 'surname', 'role', 'email', 'phone', 'avatar']
     simple_fields_to_update = fields_to_update
 
     @classmethod
@@ -30,13 +30,13 @@ class Users(Base):
         return [cls.orm2dict(user) for user in cls.query.order_by(cls.user_id).all()]
 
     @classmethod
-    def get_user_by_id(cls, user_id):
+    def get_user_by_id(cls, user_id: int):
         return cls.orm2dict(cls.query.filter_by(user_id=user_id).first())
 
     get_obj_by_id = get_user_by_id
 
     @classmethod
-    def get_user_by_login(cls, login_id, login_type):
+    def get_user_by_login(cls, login_id: str, login_type: str):
         return cls.orm2dict(cls.query.filter_by(login_id=login_id, login_type=login_type).first())
 
     @classmethod
@@ -62,5 +62,5 @@ class Users(Base):
 def create_all(*args, **kwargs):
     admins = get_db_initialization()['admins']
     for admin in admins:
-        admin['role'] = EnumUserRole.ADMIN
+        admin['role'] = EnumUserRole.ADMIN.name
         Users.dict2cls(admin, False).add()

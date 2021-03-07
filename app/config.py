@@ -2,6 +2,8 @@ import os
 
 from os import environ
 
+from .utils import str2bool
+
 
 class Environment:
     SCHEME = environ.get('SCHEME', 'http')
@@ -11,6 +13,7 @@ class Environment:
     DB_HOST = environ['DB_HOST']
     DB_PORT = environ['DB_PORT']
     DB_NAME = environ['DB_NAME']
+    LOG_ERRORS = str2bool(environ.get('LOG_ERRORS', 'False'))
     GOOGLE_CLIENT_SECRET = environ['GOOGLE_CLIENT_SECRET']
     VK_CLIENT_SECRET = environ['VK_CLIENT_SECRET']
 
@@ -24,6 +27,8 @@ class Config:
     SWAGGER_UI_REQUEST_DURATION = True
     ERROR_404_HELP = False
     CORS_SUPPORTS_CREDENTIALS = True
+
+    LOG_ERRORS = Environment.LOG_ERRORS
 
     HOST = f'{Environment.SCHEME}://{Environment.HOST}'
 

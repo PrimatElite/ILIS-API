@@ -23,25 +23,33 @@ class UsersModels:
         'phone': fields.String(description='The user phone'),
         'avatar': fields.String(description='The user avatar')
     })
-    update_user = api.model('update_user', {
+    update_user_me = api.model('update_user_me', {
         'name': fields.String(description='The user name'),
         'surname': fields.String(description='The user surname'),
-        'role': fields.String(description='The user role', enum=list(EnumUserRole.__members__)),
         'email': fields.String(description='The user email'),
         'phone': fields.String(description='The user phone')
     })
-    user = api.model('user', {
+    update_user = api.clone('update_user', {
         'user_id': fields.Integer(required=True, description='The user identifier'),
-        'login_id': fields.String(description='The user login identifier'),
-        'login_type': fields.String(description='The user login service type', enum=list(EnumLoginService.__members__)),
+        'role': fields.String(description='The user role', enum=list(EnumUserRole.__members__))
+    }, update_user_me)
+    user_public = api.model('user_public', {
+        'user_id': fields.Integer(required=True, description='The user identifier'),
         'name': fields.String(required=True, description='The user name'),
         'surname': fields.String(required=True, description='The user surname'),
         'role': fields.String(required=True, description='The user role', enum=list(EnumUserRole.__members__)),
-        'email': fields.String(description='The user email'),
-        'phone': fields.String(description='The user phone'),
-        'avatar': fields.String(required=True, description='The user avatar'),
-        'created_at': fields.DateTime(description='The user created datetime'),
-        'updated_at': fields.DateTime(description='The user updated datetime')
+        'avatar': fields.String(required=True, description='The user avatar')
+    })
+    user_with_contacts = api.clone('user_with_contacts', user_public, {
+        'email': fields.String(required=True, description='The user email'),
+        'phone': fields.String(required=True, description='The user phone')
+    })
+    user = api.clone('user', user_with_contacts, {
+        'login_id': fields.String(required=True, description='The user login identifier'),
+        'login_type': fields.String(required=True, description='The user login service type',
+                                    enum=list(EnumLoginService.__members__)),
+        'created_at': fields.DateTime(required=True, description='The user created datetime'),
+        'updated_at': fields.DateTime(required=True, description='The user updated datetime')
     })
 
 

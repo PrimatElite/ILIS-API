@@ -26,7 +26,13 @@ class ApiScheme(Api):
         return url_for(self.endpoint('specs'), _external=True, _scheme=scheme)
 
 
-AUTHORIZATIONS = {}
+AUTHORIZATIONS = {
+    'access-token': {
+        'type': 'apiKey',
+        'in': 'header',
+        'name': 'authorization'
+    }
+}
 
 
 def init_app(app: Flask):
