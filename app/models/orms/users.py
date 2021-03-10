@@ -2,6 +2,7 @@ from sqlalchemy import Column, DateTime, Enum, event, Integer, String
 from typing import Union
 
 from .base import Base
+from .storages import Storages
 from ..db import seq
 from ..enums import EnumLoginService, EnumUserRole
 from ...utils import get_db_initialization
@@ -24,6 +25,8 @@ class Users(Base):
 
     fields_to_update = ['name', 'surname', 'role', 'email', 'phone', 'avatar']
     simple_fields_to_update = fields_to_update
+
+    delete_relation_funcs = [Storages.delete_storages_by_user]
 
     @classmethod
     def get_users(cls):
