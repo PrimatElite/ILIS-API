@@ -100,14 +100,18 @@ class Base(db.Model):
         pass
 
     @classmethod
-    def delete(cls, obj_id: int) -> Union['Base', None]:
+    def _delete(cls, obj_dict: dict):
+        obj = cls.dict2cls(obj_dict)
+        obj._before_deletion()
+        obj_id = getattr(obj, cls.get_id_name())
+        for delete_func in cls.delete_relation_funcs:
+            delete_func(obj_id)
+        obj.delete_self()
+
+    @classmethod
+    def delete(cls, obj_id: int) -> Union[dict, None]:
         obj_dict = cls.get_obj_by_id(obj_id)
         if obj_dict is not None:
-            obj = cls.dict2cls(obj_dict)
-            obj._before_deletion()
-            obj_id = getattr(obj, cls.get_id_name())
-            for delete_func in cls.delete_relation_funcs:
-                delete_func(obj_id)
-            obj.delete_self()
+            cls._delete(obj_dict)
             return obj_dict
         return None

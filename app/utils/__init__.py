@@ -34,6 +34,10 @@ def any_in(params: Iterable, data: Iterable) -> bool:
     return any(p in data for p in params)
 
 
+def all_in(params: Iterable, data: Iterable) -> bool:
+    return all(p in data for p in params)
+
+
 def str2bool(value: str) -> bool:
     if value.isdigit():
         return False if int(value) == 0 else True

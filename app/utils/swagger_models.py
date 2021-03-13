@@ -53,6 +53,30 @@ class UsersModels:
     })
 
 
+class StoragesModels:
+    api = Namespace('storages', description='Storages operations')
+    create_storage_me = api.model('create_storage_me', {
+        'name': fields.String(required=True, description='The storage name'),
+        'latitude': fields.Float(required=True, description='The storage latitude'),
+        'longitude': fields.Float(required=True, description='The storage longitude'),
+        'address': fields.String(required=True, description='The storage address')
+    })
+    create_storage = api.clone('create_storage', create_storage_me, {
+        'user_id': fields.Integer(required=True, description='The storage user owner'),
+    })
+    update_storage_me = api.model('update_storage_me', {
+        'storage_id': fields.Integer(required=True, description='The storage unique identifier'),
+        'name': fields.String(description='The storage name'),
+        'latitude': fields.Float(description='The storage latitude'),
+        'longitude': fields.Float(description='The storage longitude'),
+        'address': fields.String(description='The storage address')
+    })
+    update_storage = api.clone('update_storage', update_storage_me)
+    storage = api.clone('storage', {
+        'storage_id': fields.Integer(required=True, description='The storage unique identifier')
+    }, create_storage)
+
+
 class AuthModels:
     api = Namespace('auth', description='Auth operations')
     access_token = api.model('access_token', {
