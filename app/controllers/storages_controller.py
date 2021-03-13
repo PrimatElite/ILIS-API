@@ -102,7 +102,10 @@ class StoragesMeApi(Resource):
         requester = get_user_from_request(api)
         data = marshal(api.payload, StoragesModels.update_storage_me, skip_none=True)
         data['user_id'] = requester['user_id']
-        return Storages.update(data)
+        updated_storage = Storages.update(data)
+        if updated_storage is not None:
+            return updated_storage
+        api.abort(HTTPStatus.NOT_FOUND, f'Storage not found')
 
     @api.doc('create_storage_me')
     @api.expect(StoragesModels.create_storage_me, validate=True)
