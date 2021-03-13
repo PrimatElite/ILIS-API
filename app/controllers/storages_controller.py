@@ -89,7 +89,7 @@ class StoragesMeApi(Resource):
     @api.response(404, 'Not found')
     @token_required
     def get(self):
-        """Get storages by user"""
+        """Get own storages"""
         user = get_user_from_request(api)
         return Storages.get_storages_by_user(user['user_id'])
 
@@ -102,14 +102,18 @@ class StoragesMeApi(Resource):
     @api.response(404, 'Not found')
     @token_required
     def put(self):
-        """Update storage by user"""
+        """Update own storage"""
         requester = get_user_from_request(api)
         data = marshal(api.payload, StoragesModels.update_storage_me, skip_none=True)
-        data['user_id'] = requester['user_id']
-        storage = Storages.update(data)
+        storage = Storages.get_storage_by_id(data['storage_id'])
         if storage is not None:
-            return storage
+            if requester['user_id'] == storage['user_id']:
+                storage = Storages.update(data)
+                return storage
+            else:
+                api.abort(HTTPStatus.FORBIDDEN, f'Storage {data["storage_id"]} is not yours')
         api.abort(HTTPStatus.NOT_FOUND, f'Storage {data["storage_id"]} not found')
+
 
     @api.doc('create_storage_me')
     @api.expect(StoragesModels.create_storage_me, validate=True)
@@ -120,7 +124,7 @@ class StoragesMeApi(Resource):
     @api.response(404, 'Not found')
     @token_required
     def post(self):
-        """Create new storage"""
+        """Create new own storage"""
         requester = get_user_from_request(api)
         storage = marshal(api.payload, StoragesModels.create_storage_me, skip_none=True)
         storage['user_id'] = requester['user_id']
@@ -141,10 +145,10 @@ class StoragesMeByIdApi(Resource):
         storage = Storages.get_storage_by_id(storage_id)
         if storage is not None:
             if requester['user_id'] == storage['user_id']:
-                storage = Storages.delete(storage_id)
+                Storages.delete(storage_id)
                 return '', 204
-        if storage:
-            api.abort(HTTPStatus.FORBIDDEN, f'Storage {storage_id} is not yours')
+            else:
+                api.abort(HTTPStatus.FORBIDDEN, f'Storage {storage_id} is not yours')
         api.abort(HTTPStatus.NOT_FOUND, f'Storage {storage_id} not found')
 
 
