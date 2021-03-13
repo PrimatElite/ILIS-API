@@ -7,8 +7,8 @@ from . import auth_controller
 from . import default_controller
 from . import storages_controller
 from . import users_controller
-from ..utils import get_version
 from ..config import Environment
+from ..utils import get_version
 
 
 def validate_datetime(instance: str):
@@ -45,7 +45,7 @@ def init_app(app: Flask):
 
     api.add_namespace(default_controller.api, path='/')
     api.add_namespace(auth_controller.api)
-    api.add_namespace(users_controller.api)
     api.add_namespace(storages_controller.api)
+    api.add_namespace(users_controller.api)
 
     app.register_blueprint(blueprint)
