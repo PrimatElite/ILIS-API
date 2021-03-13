@@ -1,0 +1,30 @@
+{% extends 'admin/base.html' %}
+
+{% block access_control %}
+{% if current_user.is_authenticated %}
+<div class="btn-group pull-right">
+    <button type="button" class="btn dropdown-toggle" data-toggle="dropdown">
+        {% if current_user.avatar is not none and current_user.name is not none %}
+            <img src="{{ current_user.avatar }}" alt="" class="img-circle" style="height: 14px"/>
+            {{ current_user.name }}
+            <span class="caret"></span>
+        {% elif current_user.avatar is none and current_user.name is not none %}
+            <i class="icon-user"></i>
+            {{ current_user.name }}
+            <span class="caret"></span>
+        {% elif current_user.avatar is not none and current_user.name is none %}
+            <img src="{{ current_user.avatar }}" alt="" class="img-circle" style="height: 14px"/>
+            USER
+            <span class="caret"></span>
+        {% else %}
+            <i class="icon-user"></i>
+            USER
+            <span class="caret"></span>
+        {% endif %}
+    </button>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{{ url_for('admin.logout_view') }}">Log out</a></li>
+    </ul>
+</div>
+{% endif %}
+{% endblock %}

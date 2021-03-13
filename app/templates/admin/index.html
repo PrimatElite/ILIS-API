@@ -1,0 +1,81 @@
+{% extends 'admin/master.html' %}
+
+{% block head_css %}
+{{ super() }}
+<link href="{{ url_for('static', filename='admin/css/home.css') }}" rel="stylesheet">
+{% endblock head_css %}
+
+{% block body %}
+{% if current_user.is_authenticated %}
+    <div class="container">
+        <div class="row">
+            <div class="span4">
+                <div class="card">
+                    <div class="text-center">
+                        {% if current_user.avatar is not none %}
+                            <img src="{{ current_user.avatar }}" alt="" class="img-circle" width="150">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='admin/user.svg') }}" alt="" width="150">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="span8">
+                <div class="card">
+                    <div class="row-fluid">
+                        <div class="span3">
+                            <h5 class="mb-0">Full Name</h5>
+                        </div>
+                        <div class="span9">
+                            {% if current_user.surname is not none and current_user.name is not none %}
+                                <p class="value muted">{{ current_user.surname }} {{ current_user.name }}</p>
+                            {% elif current_user.surname is none and current_user.name is not none %}
+                                <p class="value muted">{{ current_user.name }}</p>
+                            {% elif current_user.surname is not none and current_user.name is none %}
+                                <p class="value muted">{{ current_user.surname }}</p>
+                            {% else %}
+                                <p class="value muted"></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <hr class="separator">
+                    <div class="row-fluid">
+                        <div class="span3">
+                            <h5 class="mb-0">Email</h5>
+                        </div>
+                        <div class="span9">
+                            {% if current_user.email is not none %}
+                                <p class="value muted">{{ current_user.email }}</p>
+                            {% else %}
+                                <p class="value muted"></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <hr class="separator">
+                    <div class="row-fluid">
+                        <div class="span3">
+                            <h5 class="mb-0">Phone</h5>
+                        </div>
+                        <div class="span9">
+                            {% if current_user.phone is not none %}
+                                <p class="value muted">{{ current_user.phone }}</p>
+                            {% else %}
+                                <p class="value muted"></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <hr class="separator">
+                    <div class="row-fluid">
+                        <div class="span3">
+                            <h5 class="mb-0">Logged in via</h5>
+                        </div>
+                        <div class="span9">
+                            <p class="value muted">{{ current_user.login_type.name }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock body %}

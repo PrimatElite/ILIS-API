@@ -1,0 +1,22 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<div class="row-fluid">
+    <div>
+        <form method="POST" action="">
+            <div>
+            {{ form['service'].label }}
+            {{ form['service'] }}
+            {% if form['service'].errors %}
+            <ul>
+                {% for e in form['service'].errors %}
+                <li>{{ e }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            </div>
+            <button class="btn" type="submit">Log in</button>
+        </form>
+    </div>
+</div>
+{% endblock body %}

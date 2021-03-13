@@ -14,7 +14,7 @@ class VKOAuth2(BaseOAuth2):
     VK_SCOPES = ['offline', 'email']
     VK_CODE_URL = 'https://oauth.vk.com/authorize'
     VK_TOKEN_URL = 'https://oauth.vk.com/access_token'
-    VK_INFO_URL = 'https://api.vk.com/method/users.get?v=5.52&fields=photo_200&access_token='
+    VK_INFO_URL = 'https://api.vk.com/method/users.get?v=5.52&fields=photo_max&access_token='
 
     @classmethod
     def get_code_url(cls, redirect_uri: str) -> str:
@@ -64,7 +64,7 @@ class VKOAuth2(BaseOAuth2):
             'login_type': EnumLoginService.VK.name,
             'name': info['first_name'],
             'surname': info['last_name'],
-            'avatar': info['photo_200']
+            'avatar': info['photo_max']
         }
         if 'email' in info:
             data['email'] = info['email']
