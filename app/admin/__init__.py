@@ -1,3 +1,5 @@
+import warnings
+
 from flask import current_app, Flask, redirect, request, session, url_for
 from flask_admin import Admin, AdminIndexView, expose, helpers
 from flask_login import login_required, login_user, logout_user
@@ -5,7 +7,9 @@ from http import HTTPStatus
 from urllib.parse import quote
 
 from .login import init_app as login_init_app, is_user_authenticated, LoginForm
+from .views import UsersView
 from ..oauth2 import get_service
+from ..models.db import db
 from ..models.orms.users import Users
 from ..utils.swagger_models import AuthModels
 
@@ -52,3 +56,7 @@ class IndexView(AdminIndexView):
 def init_app(app: Flask):
     admin = Admin(app, 'ILIS Admin', index_view=IndexView(), base_template='master.html', template_mode='bootstrap2')
     login_init_app(app, 'admin.login_view')
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', 'Fields missing from ruleset', UserWarning)
+        admin.add_view(UsersView(db.session))
