@@ -36,7 +36,7 @@ class Storages(Base):
     get_obj_by_id = get_storage_by_id
 
     @classmethod
-    def create_storage(cls, data: dict) -> Union[dict, None]:
+    def create(cls, data: dict) -> Union[dict, None]:
         from .users import Users
 
         user = Users.get_user_by_id(data['user_id'])

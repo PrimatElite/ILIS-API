@@ -29,13 +29,17 @@ class StoragesApi(Resource):
     @api.response(400, 'Bad request')
     @api.response(401, 'Unauthorized')
     @api.response(403, 'Forbidden operation')
+    @api.response(404, 'Not found')
     @token_required
     def post(self):
         """Create new storage"""
         requester = get_user_from_request(api)
         check_admin(api, requester)
-        storage = Storages.create_storage(marshal(api.payload, StoragesModels.storage, skip_none=True))
-        return storage, 201
+        data = marshal(api.payload, StoragesModels.create_storage, skip_none=True)
+        storage = Storages.create(data)
+        if storage is not None:
+            return storage, 201
+        api.abort(HTTPStatus.NOT_FOUND, f'User {data["user_id"]} not found')
 
     @api.doc('update_storage')
     @api.expect(StoragesModels.update_storage, validate=True)
@@ -51,7 +55,7 @@ class StoragesApi(Resource):
         check_admin(api, requester)
         data = marshal(api.payload, StoragesModels.update_storage, skip_none=True)
         storage = Storages.update(data)
-        if storage:
+        if storage is not None:
             return storage
         api.abort(HTTPStatus.NOT_FOUND, f'Storage {data["storage_id"]} not found')
 
@@ -102,10 +106,10 @@ class StoragesMeApi(Resource):
         requester = get_user_from_request(api)
         data = marshal(api.payload, StoragesModels.update_storage_me, skip_none=True)
         data['user_id'] = requester['user_id']
-        updated_storage = Storages.update(data)
-        if updated_storage is not None:
-            return updated_storage
-        api.abort(HTTPStatus.NOT_FOUND, f'Storage not found')
+        storage = Storages.update(data)
+        if storage is not None:
+            return storage
+        api.abort(HTTPStatus.NOT_FOUND, f'Storage {data["storage_id"]} not found')
 
     @api.doc('create_storage_me')
     @api.expect(StoragesModels.create_storage_me, validate=True)
@@ -122,6 +126,7 @@ class StoragesMeApi(Resource):
         storage['user_id'] = requester['user_id']
         return Storages.create(storage), 201
 
+
 @api.route('/me/<int:storage_id>')
 class StoragesMeByIdApi(Resource):
     @api.doc('delete_me_storage_by_id', security='access-token')
@@ -131,7 +136,7 @@ class StoragesMeByIdApi(Resource):
     @api.response(404, 'Not found')
     @token_required
     def delete(self, storage_id: int):
-        """Delete me storage by id"""
+        """Delete own storage by id"""
         requester = get_user_from_request(api)
         storage = Storages.get_storage_by_id(storage_id)
         if storage is not None:
