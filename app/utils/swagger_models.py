@@ -71,9 +71,7 @@ class StoragesModels:
         'longitude': fields.Float(description='The storage longitude'),
         'address': fields.String(description='The storage address')
     })
-    update_storage = api.clone('update_storage', {
-        'user_id': fields.Integer(required=True, description='The storage user owner')
-    }, update_storage_me)
+    update_storage = api.clone('update_storage', update_storage_me)
     storage = api.clone('storage', {
         'storage_id': fields.Integer(required=True, description='The storage unique identifier')
     }, create_storage)

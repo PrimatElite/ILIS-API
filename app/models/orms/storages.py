@@ -36,7 +36,7 @@ class Storages(Base):
     get_obj_by_id = get_storage_by_id
 
     @classmethod
-    def create(cls, data: dict) -> Union[dict, None]:
+    def create_storage(cls, data: dict) -> Union[dict, None]:
         from .users import Users
 
         user = Users.get_user_by_id(data['user_id'])
@@ -49,7 +49,7 @@ class Storages(Base):
     @classmethod
     def update(cls, data: dict) -> Union[dict, None]:
         storage_dict = cls.get_storage_by_id(data['storage_id'])
-        if storage_dict:
+        if storage_dict is not None:
             if not cls._need_to_update(data):
                 return storage_dict
             storage = cls.dict2cls(storage_dict)._update_fields(data, cls.simple_fields_to_update)
