@@ -46,7 +46,7 @@ class GoogleOAuth2(BaseOAuth2):
             api.abort(response.status_code)
         response_data = response.json()
         user_info = cls.get_info(response_data['access_token'])
-        return TokenResponse(response_data['access_token'], response_data['refresh_token'],
+        return TokenResponse(response_data['access_token'], response_data.get('refresh_token'),
                              response_data['expires_in']), user_info
 
     @classmethod
@@ -83,6 +83,7 @@ class GoogleOAuth2(BaseOAuth2):
             'email': info['email'],
             'avatar': info['picture']
         }
+        data['avatar'] = data['avatar'].replace('s96-c', '')
         return data
 
     @classmethod

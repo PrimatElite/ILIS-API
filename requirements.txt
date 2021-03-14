@@ -1,5 +1,7 @@
 Flask
+Flask-Admin
 Flask-Cors
+Flask-Login
 flask-restplus
 Flask-SQLAlchemy
 jsonschema
@@ -7,3 +9,4 @@ psycopg2
 python-dateutil
 requests
 Werkzeug==0.16.1
+wtforms

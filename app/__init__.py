@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 
-from . import controllers, models
+from . import admin, controllers, models
 from .config import Config
 
 
@@ -16,4 +16,5 @@ def create_app() -> Flask:
     CORS(app, resources={r'/*': {'origins': '*'}}, supports_credentials=True)
     controllers.init_app(app)
     models.init_app(app)
+    admin.init_app(app)
     return app

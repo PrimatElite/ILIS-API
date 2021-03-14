@@ -16,6 +16,7 @@ class Environment:
     LOG_ERRORS = str2bool(environ.get('LOG_ERRORS', 'False'))
     GOOGLE_CLIENT_SECRET = environ['GOOGLE_CLIENT_SECRET']
     VK_CLIENT_SECRET = environ['VK_CLIENT_SECRET']
+    SECRET_KEY = environ['SECRET_KEY']
 
 
 class Config:
@@ -40,3 +41,5 @@ class Config:
 
     VK_CLIENT_ID = '7783375'
     VK_CLIENT_SECRET = Environment.VK_CLIENT_SECRET
+
+    SECRET_KEY = Environment.SECRET_KEY

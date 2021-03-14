@@ -60,6 +60,23 @@ class Users(Base):
             user_dict = cls.orm2dict(user)
         return user_dict
 
+    # Integration with Flask-Admin and Flask-Login:
+
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_active(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        return self.user_id
+
 
 @event.listens_for(Users.__table__, 'after_create')
 def create_all(*args, **kwargs):

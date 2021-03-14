@@ -1,7 +1,7 @@
 from flask_restplus import marshal, Resource
 from http import HTTPStatus
 
-from ..models import Users, Storages
+from ..models import Storages, Users
 from ..utils.auth import check_admin, get_user_from_request, token_required
 from ..utils.swagger_models import StoragesModels
 
@@ -93,6 +93,21 @@ class StoragesMeApi(Resource):
         user = get_user_from_request(api)
         return Storages.get_storages_by_user(user['user_id'])
 
+    @api.doc('create_storage_me')
+    @api.expect(StoragesModels.create_storage_me, validate=True)
+    @api.response(201, 'Storage created', StoragesModels.storage)
+    @api.response(400, 'Bad request')
+    @api.response(401, 'Unauthorized')
+    @api.response(403, 'Forbidden operation')
+    @api.response(404, 'Not found')
+    @token_required
+    def post(self):
+        """Create new own storage"""
+        requester = get_user_from_request(api)
+        storage = marshal(api.payload, StoragesModels.create_storage_me, skip_none=True)
+        storage['user_id'] = requester['user_id']
+        return Storages.create(storage), 201
+
     @api.doc('update_storage_me')
     @api.expect(StoragesModels.update_storage_me, validate=True)
     @api.response(200, 'Storage updated', StoragesModels.storage)
@@ -113,22 +128,6 @@ class StoragesMeApi(Resource):
             else:
                 api.abort(HTTPStatus.FORBIDDEN, f'Storage {data["storage_id"]} is not yours')
         api.abort(HTTPStatus.NOT_FOUND, f'Storage {data["storage_id"]} not found')
-
-
-    @api.doc('create_storage_me')
-    @api.expect(StoragesModels.create_storage_me, validate=True)
-    @api.response(201, 'Storage created', StoragesModels.storage)
-    @api.response(400, 'Bad request')
-    @api.response(401, 'Unauthorized')
-    @api.response(403, 'Forbidden operation')
-    @api.response(404, 'Not found')
-    @token_required
-    def post(self):
-        """Create new own storage"""
-        requester = get_user_from_request(api)
-        storage = marshal(api.payload, StoragesModels.create_storage_me, skip_none=True)
-        storage['user_id'] = requester['user_id']
-        return Storages.create(storage), 201
 
 
 @api.route('/me/<int:storage_id>')
