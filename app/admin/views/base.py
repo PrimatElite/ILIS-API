@@ -1,4 +1,4 @@
-from flask import current_app, flash, redirect, url_for
+from flask import current_app, flash, redirect
 from flask_admin import expose
 from flask_admin.contrib.sqla import ModelView
 from flask_login import login_url
@@ -24,7 +24,7 @@ class BaseView(ModelView):
         return is_user_authenticated()
 
     def inaccessible_callback(self, name: str, **kwargs):
-        flash('Please log in', 'error')
+        flash('Please, log in', 'error')
         return redirect(login_url(current_app.login_manager.login_view))
 
     @expose('/')

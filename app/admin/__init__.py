@@ -17,9 +17,9 @@ from ..utils.swagger_models import AuthModels
 class IndexView(AdminIndexView):
     @expose('/')
     def index(self):
-        if not is_user_authenticated():
-            return redirect(url_for('.login_view'))
-        return super(IndexView, self).index()
+        if is_user_authenticated():
+            return super(IndexView, self).index()
+        return redirect(url_for('.login_view'))
 
     @expose('/login', methods=('GET', 'POST'))
     def login_view(self):
