@@ -73,9 +73,11 @@ class StoragesByIdApi(Resource):
         """Delete storage by id"""
         requester = get_user_from_request(api)
         check_admin(api, requester)
-        storage = Storages.delete(storage_id)
-        if storage:
-            return '', 204
+        ret = Storages.delete(storage_id)
+        if ret is not None:
+            if ret:
+                return '', 204
+            api.abort(HTTPStatus.FORBIDDEN, f'Storage {storage_id} can\'t be deleted')
         api.abort(HTTPStatus.NOT_FOUND, f'Storage {storage_id} not found')
 
 
@@ -144,10 +146,11 @@ class StoragesMeByIdApi(Resource):
         storage = Storages.get_storage_by_id(storage_id)
         if storage is not None:
             if requester['user_id'] == storage['user_id']:
-                Storages.delete(storage_id)
-                return '', 204
-            else:
-                api.abort(HTTPStatus.FORBIDDEN, f'Storage {storage_id} is not yours')
+                ret = Storages.delete(storage_id)
+                if ret:
+                    return '', 204
+                api.abort(HTTPStatus.FORBIDDEN, f'Storage {storage_id} can\'t be deleted')
+            api.abort(HTTPStatus.FORBIDDEN, f'Storage {storage_id} is not yours')
         api.abort(HTTPStatus.NOT_FOUND, f'Storage {storage_id} not found')
 
 

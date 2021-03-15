@@ -52,7 +52,7 @@ class UsersApi(Resource):
         check_admin(api, requester)
         data = marshal(api.payload, UsersModels.update_user, skip_none=True)
         user = Users.update(data)
-        if user:
+        if user is not None:
             return user
         api.abort(HTTPStatus.NOT_FOUND, f'User {data["user_id"]} not found')
 
@@ -119,7 +119,9 @@ class UsersByIdApi(Resource):
         """Delete user by id"""
         requester = get_user_from_request(api)
         check_admin(api, requester)
-        user = Users.delete(user_id)
-        if user:
-            return '', 204
+        ret = Users.delete(user_id)
+        if ret is not None:
+            if ret:
+                return '', 204
+            api.abort(HTTPStatus.FORBIDDEN, f'User {user_id} can\'t be deleted')
         api.abort(HTTPStatus.NOT_FOUND, f'User {user_id} not found')
