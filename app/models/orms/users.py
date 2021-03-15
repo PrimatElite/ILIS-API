@@ -1,5 +1,5 @@
 from sqlalchemy import Column, DateTime, Enum, event, Integer, String
-from typing import Union
+from typing import List, Optional
 
 from .base import Base
 from .storages import Storages
@@ -29,17 +29,17 @@ class Users(Base):
     delete_relation_funcs = [Storages.delete_storages_by_user]
 
     @classmethod
-    def get_users(cls):
+    def get_users(cls) -> List[dict]:
         return [cls.orm2dict(user) for user in cls.query.order_by(cls.user_id).all()]
 
     @classmethod
-    def get_user_by_id(cls, user_id: int):
+    def get_user_by_id(cls, user_id: int) -> Optional[dict]:
         return cls.orm2dict(cls.query.filter_by(user_id=user_id).first())
 
     get_obj_by_id = get_user_by_id
 
     @classmethod
-    def get_user_by_login(cls, login_id: str, login_type: str):
+    def get_user_by_login(cls, login_id: str, login_type: str) -> Optional[dict]:
         return cls.orm2dict(cls.query.filter_by(login_id=login_id, login_type=login_type).first())
 
     @classmethod
@@ -51,7 +51,7 @@ class Users(Base):
         return user_dict
 
     @classmethod
-    def update(cls, data: dict) -> Union[dict, None]:
+    def update(cls, data: dict) -> Optional[dict]:
         user_dict = cls.get_user_by_id(data['user_id'])
         if user_dict:
             if not cls._need_to_update(data):
@@ -59,6 +59,11 @@ class Users(Base):
             user = cls.dict2cls(user_dict)._update_fields(data, cls.simple_fields_to_update).add()
             user_dict = cls.orm2dict(user)
         return user_dict
+
+    @classmethod
+    def can_delete(cls, user_dict: dict) -> bool:
+        return all(Storages.can_delete(storage_dict)
+                   for storage_dict in Storages.get_storages_by_user(user_dict['user_id']))
 
     # Integration with Flask-Admin and Flask-Login:
 

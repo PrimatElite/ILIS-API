@@ -18,7 +18,7 @@ def init_app(app: Flask, login_view: str):
         return Users.query.get(user_id)
 
 
-def is_user_authenticated():
+def is_user_authenticated() -> bool:
     if not current_user.is_authenticated or current_user.role != EnumUserRole.ADMIN:
         return False
 

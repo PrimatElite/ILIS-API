@@ -3,16 +3,18 @@ from flask_admin.model.base import BaseView as FlaskBaseView
 from jinja2 import Markup
 from jinja2.runtime import Context
 from sqlalchemy.orm.scoping import scoped_session
+from typing import Optional
 
 from .base import BaseView
 from ...models.orms.users import Users
 from ...utils.swagger_models import UsersModels
 
 
-def _render_avatar(view: FlaskBaseView, context: Context, model: Users, name: str):
+def _render_avatar(view: FlaskBaseView, context: Context, model: Users, name: str) -> Optional[Markup]:
     if model.avatar is None:
-        return ''
-    return Markup(f'<img src="{model.avatar}">')
+        return None
+    data = f'<div title="<img src=\'{model.avatar}\'/>" data-role="tooltip"><img src="{model.avatar}" width="64"></div>'
+    return Markup(data)
 
 
 class UsersView(BaseView):
@@ -44,7 +46,3 @@ class UsersView(BaseView):
 
     def __init__(self, session: scoped_session, **kwargs):
         super(UsersView, self).__init__(Users, session, **kwargs)
-
-    def on_model_delete(self, model: Users):
-        # TODO add check for deleting
-        pass

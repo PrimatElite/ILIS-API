@@ -1,13 +1,14 @@
-from flask import current_app, flash, redirect
+from flask import current_app, flash, redirect, Response
 from flask_admin import expose
 from flask_admin.contrib.sqla import ModelView
+from flask_admin.form import BaseForm
 from flask_login import login_url
-from flask_sqlalchemy.model import Model
 from math import ceil
 from sqlalchemy.orm.scoping import scoped_session
 from typing import Type
 
 from ..login import is_user_authenticated
+from ...models.orms.base import Base
 
 
 class BaseView(ModelView):
@@ -17,15 +18,28 @@ class BaseView(ModelView):
 
     form_excluded_columns = ['created_at', 'updated_at']
 
-    def __init__(self, model: Type[Model], session: scoped_session, **kwargs):
+    def __init__(self, model: Type[Base], session: scoped_session, **kwargs):
         super(BaseView, self).__init__(model, session, **kwargs)
 
-    def is_accessible(self):
+    def is_accessible(self) -> bool:
         return is_user_authenticated()
 
-    def inaccessible_callback(self, name: str, **kwargs):
+    def inaccessible_callback(self, name: str, **kwargs) -> Response:
         flash('Please, log in', 'error')
         return redirect(login_url(current_app.login_manager.login_view))
+
+    def after_model_change(self, form: Type[BaseForm], model: Type[Base], is_created: bool):
+        if is_created:
+            self.model.after_create(self.model.orm2dict(model))
+        else:
+            self.model.after_update(self.model.orm2dict(model))
+
+    def on_model_delete(self, model: Type[Base]):
+        if not self.model.can_delete(self.model.orm2dict(model)):
+            raise Exception(f'{self.model.__name__[:-1]} {getattr(model, self.model.get_id_name())} can\'t be deleted')
+
+    def after_model_delete(self, model: Type[Base]):
+        self.model.after_delete(self.model.orm2dict(model))
 
     @expose('/')
     def index_view(self):

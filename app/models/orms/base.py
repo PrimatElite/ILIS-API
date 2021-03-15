@@ -2,7 +2,7 @@ from collections import OrderedDict
 from datetime import datetime, timedelta
 from dateutil import parser
 from enum import Enum
-from typing import List, Union
+from typing import List, Optional
 
 from ...utils import any_in, datetime2str, validate_iso8601
 from app.models.db import db
@@ -23,7 +23,7 @@ class Base(db.Model):
         return datetime.utcnow() + timedelta(hours=3)
 
     @classmethod
-    def get_obj_by_id(cls, obj_id: int) -> 'Base':
+    def get_obj_by_id(cls, obj_id: int) -> dict:
         pass
 
     @classmethod
@@ -45,7 +45,7 @@ class Base(db.Model):
         return result
 
     @classmethod
-    def orm2dict(cls, obj: Union['Base', None], fields: List[str] = None) -> Union[dict, None]:
+    def orm2dict(cls, obj: Optional['Base'], fields: List[str] = None) -> Optional[dict]:
         def dictionate_entity(entity):
             if isinstance(entity, datetime):
                 return datetime2str(entity)
@@ -91,27 +91,44 @@ class Base(db.Model):
             db.session.add(self)
         return self
 
+    @classmethod
+    def after_create(cls, obj_dict: dict):
+        pass
+
+    @classmethod
+    def after_update(cls, obj_dict: dict):
+        pass
+
     def delete_self(self) -> 'Base':
         with db.auto_commit():
             db.session.delete(self)
         return self
 
-    def _before_deletion(self):
-        pass
+    @classmethod
+    def _delete_relations(cls, obj_id: int):
+        for delete_func in cls.delete_relation_funcs:
+            delete_func(obj_id)
+
+    @classmethod
+    def after_delete(cls, obj_dict: dict):
+        cls._delete_relations(obj_dict[cls.get_id_name()])
+
+    @classmethod
+    def can_delete(cls, obj_dict: dict) -> bool:
+        return True
 
     @classmethod
     def _delete(cls, obj_dict: dict):
         obj = cls.dict2cls(obj_dict)
-        obj._before_deletion()
-        obj_id = getattr(obj, cls.get_id_name())
-        for delete_func in cls.delete_relation_funcs:
-            delete_func(obj_id)
         obj.delete_self()
+        cls.after_delete(obj_dict)
 
     @classmethod
-    def delete(cls, obj_id: int) -> Union[dict, None]:
+    def delete(cls, obj_id: int) -> Optional[bool]:
         obj_dict = cls.get_obj_by_id(obj_id)
         if obj_dict is not None:
-            cls._delete(obj_dict)
-            return obj_dict
+            if cls.can_delete(obj_dict):
+                cls._delete(obj_dict)
+                return True
+            return False
         return None
