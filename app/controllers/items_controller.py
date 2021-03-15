@@ -63,13 +63,19 @@ class ItemsApi(Resource):
 @api.route('/<int:item_id>')
 class ItemsByIdApi(Resource):
     @api.doc('get_item_by_id')
-    @api.response(200, 'Success', ItemsModels.item)
+    @api.response(200, 'Success', ItemsModels.item_public)
     @api.response(404, 'Not found')
     def get(self, item_id: int):
         """Get item by id"""
+        from ..models import Users
         item = Items.get_item_by_id(item_id)
+        storage = Storages.get_storage_by_id(item['storage_id'])
+        user = Users.get_user_by_id(storage['user_id'])
         if item is not None:
-            return marshal(item, ItemsModels.item)
+            united = user.copy()
+            united.update(item)
+            res = marshal(united, ItemsModels.item_public)
+            return res
         api.abort(HTTPStatus.NOT_FOUND, f'Item {item_id} not found')
 
     @api.doc('delete_item_by_id', security='access-token')
@@ -84,7 +90,9 @@ class ItemsByIdApi(Resource):
         check_admin(api, requester)
         item = Items.delete(item_id)
         if item is not None:
-            return '', 204
+            if item:
+                return '', 204
+            api.abort(HTTPStatus.FORBIDDEN, f'Item {item_id} can\'t be deleted')
         api.abort(HTTPStatus.NOT_FOUND, f'Item {item_id} not found')
 
 
@@ -173,8 +181,10 @@ class ItemsMeByIdApi(Resource):
         if item is not None:
             storage = Storages.get_storage_by_id(item['storage_id'])
             if user['user_id'] == storage['user_id']:
-                Items.delete(item_id)
-                return '', 204
+                item_response = Items.delete(item_id)
+                if item_response:
+                    return '', 204
+                api.abort(HTTPStatus.FORBIDDEN, f'Item {item_id} can\'t be deleted')
             api.abort(HTTPStatus.FORBIDDEN, f'Item {item_id} is not yours')
         api.abort(HTTPStatus.NOT_FOUND, f'Item {item_id} not found')
 

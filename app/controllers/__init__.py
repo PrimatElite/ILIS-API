@@ -5,9 +5,9 @@ from jsonschema import FormatChecker
 
 from . import auth_controller
 from . import default_controller
+from . import items_controller
 from . import storages_controller
 from . import users_controller
-from . import items_controller
 from ..config import Environment
 from ..utils import get_version
 

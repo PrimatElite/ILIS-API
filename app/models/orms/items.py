@@ -1,10 +1,12 @@
-from sqlalchemy import Column, DateTime, Integer, String, event
-from typing import Union
+from sqlalchemy import Column, DateTime, Integer, String
+from typing import List, Optional
 
 from .base import Base
-# TODO import Requests
-#from .request import Requests
 from ..db import seq
+
+# TODO import Requests and Images
+#from .request import Requests
+#from .images import Images
 
 class Items(Base):
     __tablename__ = 'items'
@@ -22,26 +24,25 @@ class Items(Base):
     fields_to_update = ['storage_id', 'name_ru', 'name_en', 'desc_ru', 'desc_en', 'count']
     simple_fields_to_update = ['storage_id', 'name_ru', 'name_en', 'desc_ru', 'desc_en']
 
-    # TODO request deleter link in item
-    # Requests.delete_requests_by_item
-    # delete_relation_funcs = [Images.delete_images_by_item]
+    # TODO request and image deleter link in item
+    # delete_relation_funcs = [Images.delete_images_by_item, Requests.delete_requests_by_item]
 
     @classmethod
-    def get_items(cls):
+    def get_items(cls) -> List[dict]:
         return [cls.orm2dict(item) for item in cls.query.order_by(cls.item_id).all()]
 
     @classmethod
-    def get_items_by_storage(cls, storage_id: int):
+    def get_items_by_storage(cls, storage_id: int) -> List[dict]:
         return [cls.orm2dict(item) for item in cls.query.filter_by(storage_id=storage_id).order_by(cls.item_id).all()]
 
     @classmethod
-    def get_item_by_id(cls, item_id: int):
+    def get_item_by_id(cls, item_id: int) -> Optional[dict]:
         return cls.orm2dict(cls.query.filter_by(item_id=item_id).first())
 
     get_obj_by_id = get_item_by_id
 
     @classmethod
-    def create(cls, data: dict) -> Union[dict, None]:
+    def create(cls, data: dict) -> Optional[dict]:
         from .storages import Storages
 
         storage_dict = Storages.get_storage_by_id(data['storage_id'])
@@ -52,7 +53,7 @@ class Items(Base):
         return None
 
     @classmethod
-    def update(cls, data: dict) -> Union[dict, None]:
+    def update(cls, data: dict) -> Optional[dict]:
         item_dict = cls.get_item_by_id(data['item_id'])
         if item_dict is not None:
             if not cls._need_to_update(data):

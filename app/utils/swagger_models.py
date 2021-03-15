@@ -96,6 +96,13 @@ class ItemsModels:
         'desc_en': fields.String(max_length=511, description='The item description in English'),
         'count': fields.Integer(description='The amount of this item in storage')
     })
+    item_public = api.clone('item_public', UsersModels.user_public, {
+        'name_ru': fields.String(required=True, max_length=127, description='The item name in Russian'),
+        'name_en': fields.String(required=True, max_length=127, description='The item name in English'),
+        'desc_ru': fields.String(required=True, max_length=511, description='The item description in Russian'),
+        'desc_en': fields.String(required=True, max_length=511, description='The item description in English'),
+        'count': fields.Integer(required=True, description='The amount of this item in storage')
+    })
     item = api.clone('item', {
         'item_id': fields.Integer(required=True, description='The item identifier')
     }, create_item)
