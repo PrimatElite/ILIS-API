@@ -43,3 +43,11 @@ class Config:
     VK_CLIENT_SECRET = Environment.VK_CLIENT_SECRET
 
     SECRET_KEY = Environment.SECRET_KEY
+
+    DATA_DIR = './data'
+
+    IMAGES_WAY = 'images'
+    IMAGES_DIR = os.path.join(DATA_DIR, IMAGES_WAY)
+    IMAGES_TYPES = ['jpeg', 'png']
+    MAX_IMAGE_LENGTH_MB = 10
+    MAX_IMAGE_LENGTH_B = MAX_IMAGE_LENGTH_MB * 1024 * 1024

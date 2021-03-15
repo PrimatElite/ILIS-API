@@ -5,6 +5,8 @@ from .base import Base
 from ..db import seq
 from ...utils import all_in
 
+from .items import Items
+
 
 class Storages(Base):
     __tablename__ = 'storages'
@@ -19,6 +21,8 @@ class Storages(Base):
     location_fields_to_update = ['latitude', 'longitude', 'address']
     simple_fields_to_update = ['name']
     fields_to_update = simple_fields_to_update + location_fields_to_update
+
+    delete_relation_funcs = [Items.delete_items_by_storage]
 
     @classmethod
     def get_storages(cls):

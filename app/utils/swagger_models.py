@@ -77,6 +77,30 @@ class StoragesModels:
     }, create_storage)
 
 
+class ItemsModels:
+    api = Namespace('items', description='Items operations')
+    create_item = api.model('create_item', {
+        'storage_id': fields.Integer(required=True, description='The item storage'),
+        'name_ru': fields.String(required=True, max_length=127, description='The item name in Russian'),
+        'name_en': fields.String(required=True, max_length=127, description='The item name in English'),
+        'desc_ru': fields.String(required=True, max_length=511, description='The item description in Russian'),
+        'desc_en': fields.String(required=True, max_length=511, description='The item description in English'),
+        'count': fields.Integer(required=True, description='The amount of this item in storage')
+    })
+    update_item = api.model('update_item', {
+        'item_id': fields.Integer(required=True, description='The item identifier'),
+        'storage_id': fields.Integer(description='The item storage'),
+        'name_ru': fields.String(max_length=127, description='The item name in Russian'),
+        'name_en': fields.String(max_length=127, description='The item name in English'),
+        'desc_ru': fields.String(max_length=511, description='The item description in Russian'),
+        'desc_en': fields.String(max_length=511, description='The item description in English'),
+        'count': fields.Integer(description='The amount of this item in storage')
+    })
+    item = api.clone('item', {
+        'item_id': fields.Integer(required=True, description='The item identifier')
+    }, create_item)
+
+
 class AuthModels:
     api = Namespace('auth', description='Auth operations')
     access_token = api.model('access_token', {
