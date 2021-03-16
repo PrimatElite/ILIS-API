@@ -201,3 +201,30 @@ class ItemsMeByStorageIdApi(Resource):
         if storage is not None:
             return Items.get_items_by_storage(storage['storage_id'])
         api.abort(HTTPStatus.NOT_FOUND, f'Storage {storage_id} not found')
+
+
+@api.route('/search')
+class ItemsSearch(Resource):
+    @api.doc('search')
+    @api.expect(ItemsModels.search, validate=True)
+    @api.response(200, 'Search completed', [ItemsModels.item_public])
+    def get(self):
+        """Search"""
+        args = ItemsModels.search.parse_args()
+        content = args.content
+        name_ru = [Items.orm2dict(it) for it in Items.query.filter_by(name_ru=content).order_by(Items.item_id).all()]
+        name_en = [Items.orm2dict(it) for it in Items.query.filter_by(name_en=content).order_by(Items.item_id).all()]
+        desc_ru = [Items.orm2dict(it) for it in Items.query.filter_by(desc_ru=content).order_by(Items.item_id).all()]
+        desc_en = [Items.orm2dict(it) for it in Items.query.filter_by(desc_en=content).order_by(Items.item_id).all()]
+        res_search = name_ru
+        res_search.extend(it for it in name_en if it not in res_search)
+        res_search.extend(it for it in desc_ru if it not in res_search)
+        res_search.extend(it for it in desc_en if it not in res_search)
+        res = []
+        for item in res_search:
+            storage = Storages.get_storage_by_id(item['storage_id'])
+            user = Users.get_user_by_id(storage['user_id'])
+            united = OrderedDict([('owner', user)])
+            united.update(item)
+            res = marshal(united, ItemsModels.item_public)
+        return res
