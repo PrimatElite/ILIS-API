@@ -2,27 +2,27 @@ from sqlalchemy import Column, DateTime, Integer, String
 from typing import List, Optional
 
 from .base import Base
+# TODO import Requests and Images
+# from .images import Images
+# from .request import Requests
 from ..db import seq
 
-# TODO import Requests and Images
-#from .request import Requests
-#from .images import Images
 
 class Items(Base):
     __tablename__ = 'items'
 
     item_id = Column(Integer, seq, primary_key=True)
     storage_id = Column(Integer, nullable=False)
-    name_ru = Column(String(length=127))
-    name_en = Column(String(length=127))
-    desc_ru = Column(String(length=511))
-    desc_en = Column(String(length=511))
+    name_ru = Column(String(length=127), nullable=False)
+    name_en = Column(String(length=127), nullable=False)
+    desc_ru = Column(String(length=511), nullable=False)
+    desc_en = Column(String(length=511), nullable=False)
     count = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=Base.now)
     updated_at = Column(DateTime, default=Base.now, onupdate=Base.now)
 
     fields_to_update = ['storage_id', 'name_ru', 'name_en', 'desc_ru', 'desc_en', 'count']
-    simple_fields_to_update = ['storage_id', 'name_ru', 'name_en', 'desc_ru', 'desc_en']
+    simple_fields_to_update = ['name_ru', 'name_en', 'desc_ru', 'desc_en']
 
     # TODO request and image deleter link in item
     # delete_relation_funcs = [Images.delete_images_by_item, Requests.delete_requests_by_item]
@@ -54,19 +54,26 @@ class Items(Base):
 
     @classmethod
     def update(cls, data: dict) -> Optional[dict]:
+        from .storages import Storages
+
         item_dict = cls.get_item_by_id(data['item_id'])
+        start_storage = Storages.get_storage_by_id(item_dict['storage_id'])
         if item_dict is not None:
             if not cls._need_to_update(data):
                 return item_dict
             item = cls.dict2cls(item_dict)._update_fields(data, cls.simple_fields_to_update)
+            dest_storage = Storages.get_storage_by_id(data['storage_id'])
+            if dest_storage is not None:
+                if start_storage['user_id'] == dest_storage['user_id']:
+                    item = item._update_fields(data, ['storage_id'])
             # TODO check request based count on item update
             # requests_dict = Requests.get_requests_by_item_id(data['item_id'])
             # count = 0
             # for request_dict in requests_dict:
             #     count += request_dict['count']
-            # if data['count'] < count:
-            #     return None
-            item = item._update_fields(data, ['count'])
+            # if data['count'] > count:
+            if True:
+                item = item._update_fields(data, ['count'])
             item = item.add()
             item_dict = cls.orm2dict(item)
             return item_dict

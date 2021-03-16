@@ -85,7 +85,7 @@ class ItemsModels:
         'name_en': fields.String(required=True, max_length=127, description='The item name in English'),
         'desc_ru': fields.String(required=True, max_length=511, description='The item description in Russian'),
         'desc_en': fields.String(required=True, max_length=511, description='The item description in English'),
-        'count': fields.Integer(required=True, description='The amount of this item in storage')
+        'count': fields.Integer(required=True, min=1, description='The amount of this item in storage')
     })
     update_item = api.model('update_item', {
         'item_id': fields.Integer(required=True, description='The item identifier'),
@@ -94,18 +94,23 @@ class ItemsModels:
         'name_en': fields.String(max_length=127, description='The item name in English'),
         'desc_ru': fields.String(max_length=511, description='The item description in Russian'),
         'desc_en': fields.String(max_length=511, description='The item description in English'),
-        'count': fields.Integer(description='The amount of this item in storage')
+        'count': fields.Integer(min=1, description='The amount of this item in storage')
     })
-    item_public = api.clone('item_public', UsersModels.user_public, {
+    item_public = api.clone('item_public', {
+        'owner': fields.Nested(UsersModels.user_public),
+        'item_id': fields.Integer(required=True, description='The item identifier'),
         'name_ru': fields.String(required=True, max_length=127, description='The item name in Russian'),
         'name_en': fields.String(required=True, max_length=127, description='The item name in English'),
         'desc_ru': fields.String(required=True, max_length=511, description='The item description in Russian'),
         'desc_en': fields.String(required=True, max_length=511, description='The item description in English'),
-        'count': fields.Integer(required=True, description='The amount of this item in storage')
+        'count': fields.Integer(required=True, min=1, description='The amount of this item in storage')
     })
     item = api.clone('item', {
         'item_id': fields.Integer(required=True, description='The item identifier')
-    }, create_item)
+    }, create_item, {
+        'created_at': fields.DateTime(required=True, description='The user created datetime'),
+        'updated_at': fields.DateTime(required=True, description='The user updated datetime')
+    })
 
 
 class AuthModels:

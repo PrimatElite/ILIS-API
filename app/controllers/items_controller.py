@@ -1,7 +1,7 @@
+from collections import OrderedDict
 from flask_restplus import marshal, Resource
 from http import HTTPStatus
-
-from ..models import Items, Storages
+from ..models import Items, Storages, Users
 from ..utils.auth import check_admin, get_user_from_request, token_required
 from ..utils.swagger_models import ItemsModels
 
@@ -67,19 +67,20 @@ class ItemsByIdApi(Resource):
     @api.response(404, 'Not found')
     def get(self, item_id: int):
         """Get item by id"""
-        from ..models import Users
         item = Items.get_item_by_id(item_id)
-        storage = Storages.get_storage_by_id(item['storage_id'])
-        user = Users.get_user_by_id(storage['user_id'])
         if item is not None:
-            united = user.copy()
+            storage = Storages.get_storage_by_id(item['storage_id'])
+            owner = OrderedDict([('owner', 'None')])
+            user = Users.get_user_by_id(storage['user_id'])
+            owner['owner'] = user
+            united = owner.copy()
             united.update(item)
             res = marshal(united, ItemsModels.item_public)
             return res
         api.abort(HTTPStatus.NOT_FOUND, f'Item {item_id} not found')
 
     @api.doc('delete_item_by_id', security='access-token')
-    @api.response(204, 'User deleted')
+    @api.response(204, 'Item deleted')
     @api.response(401, 'Unauthorized')
     @api.response(403, 'Forbidden operation')
     @api.response(404, 'Not found')
@@ -99,7 +100,7 @@ class ItemsByIdApi(Resource):
 @api.route('/me')
 @api.doc(security='access-token')
 class ItemsMeApi(Resource):
-    @api.doc('create_item_in_storage_me')
+    @api.doc('create_item_me')
     @api.expect(ItemsModels.create_item, validate=True)
     @api.response(201, 'Item created', ItemsModels.item)
     @api.response(400, 'Bad request')
@@ -135,13 +136,8 @@ class ItemsMeApi(Resource):
         if item is not None:
             start_storage = Storages.get_storage_by_id(item['storage_id'])
             if user['user_id'] == start_storage['user_id']:
-                dest_storage = Storages.get_storage_by_id(data['storage_id'])
-                if dest_storage is not None:
-                    if user['user_id'] == dest_storage['user_id']:
-                        item = Items.update(data)
-                        return item
-                    api.abort(HTTPStatus.FORBIDDEN, f'Storage {data["storage_id"]} is not yours')
-                api.abort(HTTPStatus.NOT_FOUND, f'Storage {data["storage_id"]} not found')
+                item = Items.update(data)
+                return item
             api.abort(HTTPStatus.FORBIDDEN, f'Item {data["item_id"]} is not yours')
         api.abort(HTTPStatus.NOT_FOUND, f'Item {data["item_id"]} not found')
 

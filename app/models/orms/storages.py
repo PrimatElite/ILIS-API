@@ -2,10 +2,9 @@ from sqlalchemy import Column, Integer, String, Float
 from typing import Union
 
 from .base import Base
+from .items import Items
 from ..db import seq
 from ...utils import all_in
-
-from .items import Items
 
 
 class Storages(Base):
