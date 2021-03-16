@@ -70,10 +70,8 @@ class ItemsByIdApi(Resource):
         item = Items.get_item_by_id(item_id)
         if item is not None:
             storage = Storages.get_storage_by_id(item['storage_id'])
-            owner = OrderedDict([('owner', 'None')])
             user = Users.get_user_by_id(storage['user_id'])
-            owner['owner'] = user
-            united = owner.copy()
+            united = OrderedDict([('owner', user)])
             united.update(item)
             res = marshal(united, ItemsModels.item_public)
             return res

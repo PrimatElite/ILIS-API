@@ -57,23 +57,25 @@ class Items(Base):
         from .storages import Storages
 
         item_dict = cls.get_item_by_id(data['item_id'])
-        start_storage = Storages.get_storage_by_id(item_dict['storage_id'])
         if item_dict is not None:
             if not cls._need_to_update(data):
                 return item_dict
             item = cls.dict2cls(item_dict)._update_fields(data, cls.simple_fields_to_update)
-            dest_storage = Storages.get_storage_by_id(data['storage_id'])
-            if dest_storage is not None:
-                if start_storage['user_id'] == dest_storage['user_id']:
-                    item = item._update_fields(data, ['storage_id'])
-            # TODO check request based count on item update
-            # requests_dict = Requests.get_requests_by_item_id(data['item_id'])
-            # count = 0
-            # for request_dict in requests_dict:
-            #     count += request_dict['count']
-            # if data['count'] > count:
-            if True:
-                item = item._update_fields(data, ['count'])
+            if 'storage_id' in data:
+                start_storage = Storages.get_storage_by_id(item_dict['storage_id'])
+                dest_storage = Storages.get_storage_by_id(data['storage_id'])
+                if dest_storage is not None:
+                    if start_storage['user_id'] == dest_storage['user_id']:
+                        item = item._update_fields(data, ['storage_id'])
+            if 'count' in data:
+                # TODO check request based count on item update
+                # requests_dict = Requests.get_requests_by_item_id(data['item_id'])
+                # count = 0
+                # for request_dict in requests_dict:
+                #     count += request_dict['count']
+                # if data['count'] > count:
+                if True:
+                    item = item._update_fields(data, ['count'])
             item = item.add()
             item_dict = cls.orm2dict(item)
             return item_dict

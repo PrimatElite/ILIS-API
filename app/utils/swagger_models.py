@@ -97,7 +97,7 @@ class ItemsModels:
         'count': fields.Integer(min=1, description='The amount of this item in storage')
     })
     item_public = api.clone('item_public', {
-        'owner': fields.Nested(UsersModels.user_public),
+        'owner': fields.Nested(required=True, model=UsersModels.user_public, description='The item owner'),
         'item_id': fields.Integer(required=True, description='The item identifier'),
         'name_ru': fields.String(required=True, max_length=127, description='The item name in Russian'),
         'name_en': fields.String(required=True, max_length=127, description='The item name in English'),
@@ -108,8 +108,8 @@ class ItemsModels:
     item = api.clone('item', {
         'item_id': fields.Integer(required=True, description='The item identifier')
     }, create_item, {
-        'created_at': fields.DateTime(required=True, description='The user created datetime'),
-        'updated_at': fields.DateTime(required=True, description='The user updated datetime')
+        'created_at': fields.DateTime(required=True, description='The item created datetime'),
+        'updated_at': fields.DateTime(required=True, description='The item updated datetime')
     })
 
 
