@@ -77,6 +77,44 @@ class StoragesModels:
     }, create_storage)
 
 
+class ItemsModels:
+    api = Namespace('items', description='Items operations')
+    create_item = api.model('create_item', {
+        'storage_id': fields.Integer(required=True, description='The item storage'),
+        'name_ru': fields.String(required=True, max_length=127, description='The item name in Russian'),
+        'name_en': fields.String(required=True, max_length=127, description='The item name in English'),
+        'desc_ru': fields.String(required=True, max_length=511, description='The item description in Russian'),
+        'desc_en': fields.String(required=True, max_length=511, description='The item description in English'),
+        'count': fields.Integer(required=True, min=1, description='The amount of this item in storage')
+    })
+    update_item = api.model('update_item', {
+        'item_id': fields.Integer(required=True, description='The item identifier'),
+        'storage_id': fields.Integer(description='The item storage'),
+        'name_ru': fields.String(max_length=127, description='The item name in Russian'),
+        'name_en': fields.String(max_length=127, description='The item name in English'),
+        'desc_ru': fields.String(max_length=511, description='The item description in Russian'),
+        'desc_en': fields.String(max_length=511, description='The item description in English'),
+        'count': fields.Integer(min=1, description='The amount of this item in storage')
+    })
+    search_items = api.parser()
+    search_items.add_argument('content', type=str, required=True, help='Write items you require')
+    item_public = api.clone('item_public', {
+        'owner': fields.Nested(UsersModels.user_public, required=True, description='The item owner'),
+        'item_id': fields.Integer(required=True, description='The item identifier'),
+        'name_ru': fields.String(required=True, max_length=127, description='The item name in Russian'),
+        'name_en': fields.String(required=True, max_length=127, description='The item name in English'),
+        'desc_ru': fields.String(required=True, max_length=511, description='The item description in Russian'),
+        'desc_en': fields.String(required=True, max_length=511, description='The item description in English'),
+        'count': fields.Integer(required=True, min=1, description='The amount of this item in storage')
+    })
+    item = api.clone('item', {
+        'item_id': fields.Integer(required=True, description='The item identifier')
+    }, create_item, {
+        'created_at': fields.DateTime(required=True, description='The item created datetime'),
+        'updated_at': fields.DateTime(required=True, description='The item updated datetime')
+    })
+
+
 class AuthModels:
     api = Namespace('auth', description='Auth operations')
     access_token = api.model('access_token', {

@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Float
 from typing import Union
 
 from .base import Base
+from .items import Items
 from ..db import seq
 from ...utils import all_in
 
@@ -19,6 +20,8 @@ class Storages(Base):
     location_fields_to_update = ['latitude', 'longitude', 'address']
     simple_fields_to_update = ['name']
     fields_to_update = simple_fields_to_update + location_fields_to_update
+
+    delete_relation_funcs = [Items.delete_items_by_storage]
 
     @classmethod
     def get_storages(cls):
