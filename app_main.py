@@ -1,11 +1,16 @@
 from flask import request
 from flask.wrappers import Response
+from flask_migrate import Migrate, MigrateCommand
+from flask_script import Manager
 
 from app import create_app
 from app.models import db
 
 
 app = create_app()
+migrate = Migrate(app, db)
+manager = Manager(app)
+manager.add_command('db', MigrateCommand)
 
 
 @app.after_request
@@ -32,3 +37,7 @@ def resetdb():
 @app.cli.command()
 def createdb():
     db.create_all()
+
+
+if __name__ == '__main__':
+    manager.run()
