@@ -11,10 +11,10 @@ class Storages(Base):
 
     storage_id = Column(Integer, seq, primary_key=True)
     user_id = Column(Integer, nullable=False)
-    name = Column(String)
-    latitude = Column(Float)
-    longitude = Column(Float)
-    address = Column(String)
+    name = Column(String, nullable=False)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    address = Column(String, nullable=False)
 
     location_fields_to_update = ['latitude', 'longitude', 'address']
     simple_fields_to_update = ['name']
