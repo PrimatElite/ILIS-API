@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from flask_restplus import marshal, Resource
 from http import HTTPStatus
+from sqlalchemy import or_
 
 from ..models import Items, Storages, Users
 from ..utils.auth import check_admin, get_user_from_request, token_required
@@ -205,26 +206,22 @@ class ItemsMeByStorageIdApi(Resource):
 
 @api.route('/search')
 class ItemsSearch(Resource):
-    @api.doc('search')
-    @api.expect(ItemsModels.search, validate=True)
+    @api.doc('search_items')
+    @api.expect(ItemsModels.search_items)
     @api.response(200, 'Search completed', [ItemsModels.item_public])
+    @api.response(400, 'Bad request')
     def get(self):
-        """Search"""
-        args = ItemsModels.search.parse_args()
+        """Search items by name and description"""
+        args = ItemsModels.search_items.parse_args()
         content = args.content
-        name_ru = [Items.orm2dict(it) for it in Items.query.filter_by(name_ru=content).order_by(Items.item_id).all()]
-        name_en = [Items.orm2dict(it) for it in Items.query.filter_by(name_en=content).order_by(Items.item_id).all()]
-        desc_ru = [Items.orm2dict(it) for it in Items.query.filter_by(desc_ru=content).order_by(Items.item_id).all()]
-        desc_en = [Items.orm2dict(it) for it in Items.query.filter_by(desc_en=content).order_by(Items.item_id).all()]
-        res_search = name_ru
-        res_search.extend(it for it in name_en if it not in res_search)
-        res_search.extend(it for it in desc_ru if it not in res_search)
-        res_search.extend(it for it in desc_en if it not in res_search)
+        like_content = f'%{content}%'
+        filters = [column.like(like_content) for column in [Items.name_ru, Items.name_en, Items.desc_ru, Items.desc_en]]
+        res_search = [Items.orm2dict(item) for item in Items.query.filter(or_(*filters)).order_by(Items.item_id).all()]
         res = []
         for item in res_search:
             storage = Storages.get_storage_by_id(item['storage_id'])
             user = Users.get_user_by_id(storage['user_id'])
             united = OrderedDict([('owner', user)])
             united.update(item)
-            res = marshal(united, ItemsModels.item_public)
+            res.append(marshal(united, ItemsModels.item_public))
         return res

@@ -1,5 +1,4 @@
 from flask_restplus import fields, Namespace
-from flask_restplus.reqparse import RequestParser
 
 from ..models.enums import EnumLoginService, EnumUserRole
 
@@ -97,10 +96,10 @@ class ItemsModels:
         'desc_en': fields.String(max_length=511, description='The item description in English'),
         'count': fields.Integer(min=1, description='The amount of this item in storage')
     })
-    search = api.parser()
-    search.add_argument('content', type=str)
+    search_items = api.parser()
+    search_items.add_argument('content', type=str, required=True, help='Write items you require')
     item_public = api.clone('item_public', {
-        'owner': fields.Nested(required=True, model=UsersModels.user_public, description='The item owner'),
+        'owner': fields.Nested(UsersModels.user_public, required=True, description='The item owner'),
         'item_id': fields.Integer(required=True, description='The item identifier'),
         'name_ru': fields.String(required=True, max_length=127, description='The item name in Russian'),
         'name_en': fields.String(required=True, max_length=127, description='The item name in English'),
