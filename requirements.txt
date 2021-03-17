@@ -2,7 +2,9 @@ Flask
 Flask-Admin
 Flask-Cors
 Flask-Login
+Flask-Migrate
 flask-restplus
+Flask-Script
 Flask-SQLAlchemy
 jsonschema
 psycopg2

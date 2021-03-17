@@ -53,6 +53,20 @@ It needs to set some environment variables for the correct server working.
      ```bash
      export HOST=host
      ```
+* Some variables for authorization working:
+  1. `GOOGLE_CLIENT_SECRET` - secret of authorization GOOGLE application
+     ```bash
+     export GOOGLE_CLIENT_SECRET=google_client_secret
+     ```
+  2. `VK_CLIENT_SECRET` - secret of authorization VK application
+     ```bash
+     export VK_CLIENT_SECRET=vk_client_secret
+     ```
+* Some variables for admin view working:
+  1. `SECRET_KEY` - secret for Flask-Admin and Flask-Login
+     ```bash
+     export SECRET_KEY=secret_key
+     ```
 
 If you are using Windows instead of Linux, then use command `set` instead of command `export`.
 
@@ -61,6 +75,23 @@ If you are using Windows instead of Linux, then use command `set` instead of com
 After setting environment variables it can be initialized database by next command:
 ```bash
 flask createdb
+```
+
+## Migration
+
+The method described above can be used only for creating new tables. For other changes in the database, it is recommended to use migrations.
+
+Initialize migration support for the application:
+```bash
+flask db init
+```
+Create the migration script with changes detected:
+```bash
+flask db migrate
+```
+Upgrade the database:
+```bash
+flask db upgrade
 ```
 
 ## Server running
