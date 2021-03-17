@@ -83,7 +83,10 @@ class GoogleOAuth2(BaseOAuth2):
             'email': info['email'],
             'avatar': info['picture']
         }
-        data['avatar'] = data['avatar'].replace('s96-c', '')
+        ind = data['avatar'].find('s96-c')
+        if ind > -1:
+            avatar = data['avatar']
+            data['avatar'] = avatar.replace('=s96-c', '') if avatar[ind - 1] == '=' else avatar.replace('s96-c', '')
         return data
 
     @classmethod
