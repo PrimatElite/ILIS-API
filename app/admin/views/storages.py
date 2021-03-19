@@ -1,9 +1,23 @@
 from flask_admin.form import rules
+from flask_sqlalchemy import BaseQuery
 from sqlalchemy.orm.scoping import scoped_session
 
 from .base import BaseView
-from ...models.orms.users import Storages
+from ...models import Storages, Users
 from ...utils.swagger_models import StoragesModels
+from ...utils.views import QuerySelectField
+
+
+def _get_users_query() -> BaseQuery:
+    return Users.query.order_by(Users.user_id)
+
+
+def _get_user_label(user: Users) -> str:
+    label = f'{user.user_id}'
+    for value in [user.name, user.surname]:
+        if value is not None:
+            label += f' {value}'
+    return label
 
 
 class StoragesView(BaseView):
@@ -23,6 +37,17 @@ class StoragesView(BaseView):
     form_edit_rules = [
         rules.FieldSet(['name', 'latitude', 'longitude', 'address'], 'Information'),
     ]
+
+    form_overrides = {
+        'user_id': QuerySelectField
+    }
+
+    form_args = {
+        'user_id': {
+            'query_factory': _get_users_query,
+            'get_label': _get_user_label
+        },
+    }
 
     def __init__(self, session: scoped_session, **kwargs):
         super(StoragesView, self).__init__(Storages, session, **kwargs)
