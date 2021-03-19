@@ -59,7 +59,7 @@ class StoragesView(BaseView):
         'user_id': {
             'query_factory': _get_users_query,
             'get_label': _get_user_label
-        },
+        }
     }
 
     def __init__(self, session: scoped_session, **kwargs):
