@@ -5,7 +5,7 @@ from flask_admin.form import BaseForm
 from flask_login import login_url
 from math import ceil
 from sqlalchemy.orm.scoping import scoped_session
-from typing import Type
+from typing import List, Tuple, Type
 
 from ..login import is_user_authenticated
 from ...models.orms.base import Base
@@ -17,6 +17,8 @@ class BaseView(ModelView):
     can_set_page_size = True
 
     form_excluded_columns = ['created_at', 'updated_at']
+
+    extra_columns = []
 
     def __init__(self, model: Type[Base], session: scoped_session, **kwargs):
         super(BaseView, self).__init__(model, session, **kwargs)
@@ -40,6 +42,10 @@ class BaseView(ModelView):
 
     def after_model_delete(self, model: Type[Base]):
         self.model.after_delete(self.model.orm2dict(model))
+
+    def get_column_names(self, only_columns: List[str], excluded_columns: List[str]) -> List[Tuple[str, str]]:
+        only_columns += self.extra_columns
+        return super().get_column_names(only_columns, excluded_columns)
 
     @expose('/')
     def index_view(self):

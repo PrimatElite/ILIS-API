@@ -12,10 +12,10 @@ class Storages(Base):
 
     storage_id = Column(Integer, seq, primary_key=True)
     user_id = Column(Integer, nullable=False)
-    name = Column(String)
-    latitude = Column(Float)
-    longitude = Column(Float)
-    address = Column(String)
+    name = Column(String, nullable=False)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    address = Column(String, nullable=False)
 
     location_fields_to_update = ['latitude', 'longitude', 'address']
     simple_fields_to_update = ['name']
@@ -61,6 +61,10 @@ class Storages(Base):
             storage.add()
             storage_dict = cls.orm2dict(storage)
         return storage_dict
+
+    @classmethod
+    def can_delete(cls, storage_dict: dict) -> bool:
+        return all(Items.can_delete(item_dict) for item_dict in Items.get_items_by_storage(storage_dict['storage_id']))
 
     @classmethod
     def delete_storages_by_user(cls, user_id: int):
