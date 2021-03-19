@@ -60,6 +60,10 @@ class Storages(Base):
         return storage_dict
 
     @classmethod
+    def can_delete(cls, storage_dict: dict) -> bool:
+        return all(Items.can_delete(item_dict) for item_dict in Items.get_items_by_storage(storage_dict['storage_id']))
+
+    @classmethod
     def delete_storages_by_user(cls, user_id: int):
         for storage_dict in cls.get_storages_by_user(user_id):
             cls._delete(storage_dict)
