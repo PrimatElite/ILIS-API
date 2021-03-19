@@ -1,5 +1,7 @@
 from flask_admin.form import rules
+from flask_admin.model.base import BaseView as FlaskBaseView
 from flask_sqlalchemy import BaseQuery
+from jinja2.runtime import Context
 from sqlalchemy.orm.scoping import scoped_session
 
 from .base import BaseView
@@ -20,12 +22,23 @@ def _get_user_label(user: Users) -> str:
     return label
 
 
+def _render_owner(view: FlaskBaseView, context: Context, model: Storages, name: str) -> str:
+    return _get_user_label(Users.query.filter_by(user_id=model.user_id).first())
+
+
 class StoragesView(BaseView):
+    extra_columns = ['owner']
+
     column_default_sort = 'storage_id'
 
     column_sortable_list = ['user_id', 'storage_id', 'name', 'latitude', 'longitude', 'address']
 
+    column_formatters = {
+        'owner': _render_owner
+    }
+
     column_descriptions = {field: value.description for field, value in StoragesModels.storage.items()}
+    column_descriptions['owner'] = 'The storage owner'
 
     column_searchable_list = column_sortable_list
 
