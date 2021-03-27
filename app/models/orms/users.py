@@ -2,6 +2,7 @@ from sqlalchemy import Column, DateTime, Enum, event, Integer, String
 from typing import List, Optional
 
 from .base import Base
+from .requests import Requests
 from .storages import Storages
 from ..db import seq
 from ..enums import EnumLoginService, EnumUserRole
@@ -45,7 +46,7 @@ class Users(Base):
     @classmethod
     def create(cls, data: dict) -> dict:
         user_dict = cls.get_user_by_login(data['login_id'], data['login_type'])
-        if not user_dict:
+        if user_dict is None:
             user = cls.dict2cls(data, False).add()
             user_dict = cls.orm2dict(user)
         return user_dict
@@ -53,7 +54,7 @@ class Users(Base):
     @classmethod
     def update(cls, data: dict) -> Optional[dict]:
         user_dict = cls.get_user_by_id(data['user_id'])
-        if user_dict:
+        if user_dict is not None:
             if not cls._need_to_update(data):
                 return user_dict
             user = cls.dict2cls(user_dict)._update_fields(data, cls.simple_fields_to_update).add()
@@ -62,8 +63,12 @@ class Users(Base):
 
     @classmethod
     def can_delete(cls, user_dict: dict) -> bool:
-        return all(Storages.can_delete(storage_dict)
-                   for storage_dict in Storages.get_storages_by_user(user_dict['user_id']))
+        storages_condition = all(Storages.can_delete(storage_dict)
+                                 for storage_dict in Storages.get_storages_by_user(user_dict['user_id']))
+        if not storages_condition:
+            return False
+        return all(Requests.can_delete(request_dict)
+                   for request_dict in Requests.get_requests_by_user(user_dict['user_id']))
 
     # Integration with Flask-Admin and Flask-Login:
 

@@ -2,9 +2,9 @@ from sqlalchemy import Column, DateTime, Integer, String
 from typing import List, Optional
 
 from .base import Base
-# TODO import Requests and Images
+# TODO import Images
 # from .images import Images
-# from .request import Requests
+from .requests import Requests
 from ..db import seq
 
 
@@ -21,11 +21,15 @@ class Items(Base):
     created_at = Column(DateTime, default=Base.now)
     updated_at = Column(DateTime, default=Base.now, onupdate=Base.now)
 
+    additional_fields = {
+        'remaining_count': lambda item_id: Items.get_remaining_count(Items.get_item_by_id(item_id))
+    }
+
     fields_to_update = ['storage_id', 'name_ru', 'name_en', 'desc_ru', 'desc_en', 'count']
     simple_fields_to_update = ['name_ru', 'name_en', 'desc_ru', 'desc_en']
 
-    # TODO request and image deleter link in item
-    # delete_relation_funcs = [Images.delete_images_by_item, Requests.delete_requests_by_item]
+    # TODO add image deleter link in item
+    delete_relation_funcs = [Requests.delete_requests_by_item]
 
     @classmethod
     def get_items(cls) -> List[dict]:
@@ -40,6 +44,12 @@ class Items(Base):
         return cls.orm2dict(cls.query.filter_by(item_id=item_id).first())
 
     get_obj_by_id = get_item_by_id
+
+    @classmethod
+    def get_remaining_count(cls, item_dict: dict) -> int:
+        requests_filter = filter(lambda r: r['is_in_lending'], Requests.get_requests_by_item(item_dict['item_id']))
+        lending_count = sum(map(lambda r: r['count'], requests_filter))
+        return item_dict['count'] - lending_count
 
     @classmethod
     def create(cls, data: dict) -> Optional[dict]:
@@ -64,22 +74,19 @@ class Items(Base):
             if 'storage_id' in data:
                 start_storage = Storages.get_storage_by_id(item_dict['storage_id'])
                 dest_storage = Storages.get_storage_by_id(data['storage_id'])
-                if dest_storage is not None:
-                    if start_storage['user_id'] == dest_storage['user_id']:
-                        item = item._update_fields(data, ['storage_id'])
-            if 'count' in data:
-                # TODO check request based count on item update
-                # requests_dict = Requests.get_requests_by_item_id(data['item_id'])
-                # count = 0
-                # for request_dict in requests_dict:
-                #     count += request_dict['count']
-                # if data['count'] > count:
-                if True:
-                    item = item._update_fields(data, ['count'])
+                if dest_storage is not None and start_storage['user_id'] == dest_storage['user_id']:
+                    item = item._update_fields(data, ['storage_id'])
+            if 'count' in data and data['count'] >= item.count - cls.get_remaining_count(item_dict):
+                item = item._update_fields(data, ['count'])
             item = item.add()
             item_dict = cls.orm2dict(item)
             return item_dict
         return None
+
+    @classmethod
+    def can_delete(cls, item_dict: dict) -> bool:
+        return all(Requests.can_delete(request_dict)
+                   for request_dict in Requests.get_requests_by_item(item_dict['item_id']))
 
     @classmethod
     def delete_items_by_storage(cls, storage_id: int):
