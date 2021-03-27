@@ -3,6 +3,7 @@ from http import HTTPStatus
 
 from ..models import Storages, Users
 from ..utils.auth import check_admin, get_user_from_request, token_required
+from ..utils.swagger import delete_object_by_id
 from ..utils.swagger_models import StoragesModels
 
 
@@ -71,14 +72,7 @@ class StoragesByIdApi(Resource):
     @token_required
     def delete(self, storage_id: int):
         """Delete storage by id"""
-        requester = get_user_from_request(api)
-        check_admin(api, requester)
-        ret = Storages.delete(storage_id)
-        if ret is not None:
-            if ret:
-                return '', 204
-            api.abort(HTTPStatus.FORBIDDEN, f'Storage {storage_id} can\'t be deleted')
-        api.abort(HTTPStatus.NOT_FOUND, f'Storage {storage_id} not found')
+        return delete_object_by_id(api, Storages, storage_id)
 
 
 @api.route('/me')
