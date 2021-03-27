@@ -5,7 +5,7 @@ from http import HTTPStatus
 from ..models import Items, Requests, Storages, Users
 from ..models.enums import EnumRequestStatus
 from ..utils.auth import check_admin, get_user_from_request, token_required
-from ..utils.swagger import delete_object_by_id
+from ..utils.swagger import delete_object_by_id, get_object_with_additional_fields
 from ..utils.swagger_models import RequestsModels, UsersModels
 
 
@@ -84,7 +84,7 @@ def _get_own_request_response(request: dict) -> dict:
         united_item = OrderedDict([('owner', marshal(owner, UsersModels.user_with_contacts))])
     else:
         united_item = OrderedDict([('owner', marshal(owner, UsersModels.user_public))])
-    united_item.update(item)
+    united_item.update(get_object_with_additional_fields(item, Items))
     united_request = OrderedDict([('item', united_item)])
     united_request.update(request)
     return marshal(united_request, RequestsModels.request_me)
@@ -179,7 +179,7 @@ def _get_own_item_request_response(request: dict, item: dict) -> dict:
         united = OrderedDict([('requester', marshal(user, UsersModels.user_with_contacts))])
     else:
         united = OrderedDict([('requester', marshal(user, UsersModels.user_public))])
-    united['item'] = item
+    united['item'] = get_object_with_additional_fields(item, Items)
     united.update(request)
     return marshal(united, RequestsModels.request_item)
 
