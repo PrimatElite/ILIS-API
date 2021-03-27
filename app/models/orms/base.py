@@ -11,6 +11,7 @@ from app.models.db import db
 class Base(db.Model):
     __abstract__ = True
 
+    serialize_properties = []
     additional_fields = {}
 
     fields_to_update = []
@@ -56,10 +57,9 @@ class Base(db.Model):
 
         if obj is None:
             return None
-        columns = cls.get_columns_names()
         if fields is None:
-            fields = columns
-        return OrderedDict([(field, dictionate_entity(getattr(obj, field))) for field in fields if field in columns])
+            fields = cls.get_columns_names() + cls.serialize_properties
+        return OrderedDict([(field, dictionate_entity(getattr(obj, field))) for field in fields if hasattr(obj, field)])
 
     @classmethod
     def dict2cls(cls, data: dict, merge: bool = True) -> 'Base':

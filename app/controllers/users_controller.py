@@ -4,6 +4,7 @@ from http import HTTPStatus
 from ..models import Users
 from ..utils.auth import check_admin, get_service_from_request, get_token_from_request, get_user_from_request, \
     token_required
+from ..utils.swagger import delete_object_by_id
 from ..utils.swagger_models import UsersModels
 
 
@@ -117,11 +118,4 @@ class UsersByIdApi(Resource):
     @token_required
     def delete(self, user_id: int):
         """Delete user by id"""
-        requester = get_user_from_request(api)
-        check_admin(api, requester)
-        ret = Users.delete(user_id)
-        if ret is not None:
-            if ret:
-                return '', 204
-            api.abort(HTTPStatus.FORBIDDEN, f'User {user_id} can\'t be deleted')
-        api.abort(HTTPStatus.NOT_FOUND, f'User {user_id} not found')
+        return delete_object_by_id(api, Users, user_id)

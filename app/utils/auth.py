@@ -4,7 +4,6 @@ from functools import wraps
 from http import HTTPStatus
 from typing import Callable, Tuple, Type, Union
 
-from ..models import Users
 from ..models.enums import EnumUserRole
 from ..oauth2 import BaseOAuth2, get_service, validate_service
 

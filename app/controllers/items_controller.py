@@ -5,6 +5,7 @@ from sqlalchemy import or_
 
 from ..models import Items, Storages, Users
 from ..utils.auth import check_admin, get_user_from_request, token_required
+from ..utils.swagger import delete_object_by_id, get_object_with_additional_fields, get_objects_with_additional_fields
 from ..utils.swagger_models import ItemsModels
 
 
@@ -23,7 +24,7 @@ class ItemsApi(Resource):
         """Get all items"""
         requester = get_user_from_request(api)
         check_admin(api, requester)
-        return Items.get_items()
+        return get_objects_with_additional_fields(Items.get_items(), Items)
 
     @api.doc('create_item')
     @api.expect(ItemsModels.create_item, validate=True)
@@ -40,7 +41,7 @@ class ItemsApi(Resource):
         data = marshal(api.payload, ItemsModels.create_item, skip_none=True)
         item = Items.create(data)
         if item is not None:
-            return item, 201
+            return get_object_with_additional_fields(item, Items), 201
         api.abort(HTTPStatus.NOT_FOUND, f'Storage {data["storage_id"]} not found')
 
     @api.doc('update_item')
@@ -58,7 +59,7 @@ class ItemsApi(Resource):
         data = marshal(api.payload, ItemsModels.update_item, skip_none=True)
         item = Items.update(data)
         if item is not None:
-            return item
+            return get_object_with_additional_fields(item, Items)
         api.abort(HTTPStatus.NOT_FOUND, f'Item {data["item_id"]} not found')
 
 
@@ -74,7 +75,7 @@ class ItemsByIdApi(Resource):
             storage = Storages.get_storage_by_id(item['storage_id'])
             user = Users.get_user_by_id(storage['user_id'])
             united = OrderedDict([('owner', user)])
-            united.update(item)
+            united.update(get_object_with_additional_fields(item, Items))
             res = marshal(united, ItemsModels.item_public)
             return res
         api.abort(HTTPStatus.NOT_FOUND, f'Item {item_id} not found')
@@ -87,14 +88,7 @@ class ItemsByIdApi(Resource):
     @token_required
     def delete(self, item_id: int):
         """Delete item by id"""
-        requester = get_user_from_request(api)
-        check_admin(api, requester)
-        item = Items.delete(item_id)
-        if item is not None:
-            if item:
-                return '', 204
-            api.abort(HTTPStatus.FORBIDDEN, f'Item {item_id} can\'t be deleted')
-        api.abort(HTTPStatus.NOT_FOUND, f'Item {item_id} not found')
+        return delete_object_by_id(api, Items, item_id)
 
 
 @api.route('/me')
@@ -111,14 +105,15 @@ class ItemsMeApi(Resource):
     def post(self):
         """Create new item in own storage"""
         user = get_user_from_request(api)
-        item = marshal(api.payload, ItemsModels.create_item, skip_none=True)
-        storage = Storages.get_storage_by_id(item['storage_id'])
+        data = marshal(api.payload, ItemsModels.create_item, skip_none=True)
+        storage = Storages.get_storage_by_id(data['storage_id'])
         if storage is not None:
             if user['user_id'] == storage['user_id']:
-                item['storage_id'] = storage['storage_id']
-                return Items.create(item), 201
-            api.abort(HTTPStatus.FORBIDDEN, f'Storage {item["storage_id"]} is not yours')
-        api.abort(HTTPStatus.NOT_FOUND, f'Storage {item["storage_id"]} not found')
+                data['storage_id'] = storage['storage_id']
+                item = Items.create(data)
+                return get_object_with_additional_fields(item, Items), 201
+            api.abort(HTTPStatus.FORBIDDEN, f'Storage {data["storage_id"]} is not yours')
+        api.abort(HTTPStatus.NOT_FOUND, f'Storage {data["storage_id"]} not found')
 
     @api.doc('update_item_me')
     @api.expect(ItemsModels.update_item, validate=True)
@@ -137,9 +132,10 @@ class ItemsMeApi(Resource):
             start_storage = Storages.get_storage_by_id(item['storage_id'])
             if user['user_id'] == start_storage['user_id']:
                 item = Items.update(data)
-                return item
+                return get_object_with_additional_fields(item, Items)
             api.abort(HTTPStatus.FORBIDDEN, f'Item {data["item_id"]} is not yours')
         api.abort(HTTPStatus.NOT_FOUND, f'Item {data["item_id"]} not found')
+
 
 @api.route('/me/storage/<int:storage_id>')
 @api.doc(security='access-token')
@@ -156,7 +152,7 @@ class ItemsMeByStorageIdApi(Resource):
         storage = Storages.get_storage_by_id(storage_id)
         if storage is not None:
             if user['user_id'] == storage['user_id']:
-                return Items.get_items_by_storage(storage['storage_id'])
+                return get_objects_with_additional_fields(Items.get_items_by_storage(storage['storage_id']), Items)
             api.abort(HTTPStatus.FORBIDDEN, f'Storage {storage_id} is not yours')
         api.abort(HTTPStatus.NOT_FOUND, f'Storage {storage_id} not found')
 
@@ -200,7 +196,7 @@ class ItemsMeByStorageIdApi(Resource):
         check_admin(api, requester)
         storage = Storages.get_storage_by_id(storage_id)
         if storage is not None:
-            return Items.get_items_by_storage(storage['storage_id'])
+            return get_objects_with_additional_fields(Items.get_items_by_storage(storage['storage_id']), Items)
         api.abort(HTTPStatus.NOT_FOUND, f'Storage {storage_id} not found')
 
 
@@ -222,6 +218,6 @@ class ItemsSearch(Resource):
             storage = Storages.get_storage_by_id(item['storage_id'])
             user = Users.get_user_by_id(storage['user_id'])
             united = OrderedDict([('owner', user)])
-            united.update(item)
+            united.update(get_object_with_additional_fields(item, Items))
             res.append(marshal(united, ItemsModels.item_public))
         return res

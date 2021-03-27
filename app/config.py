@@ -44,6 +44,9 @@ class Config:
 
     SECRET_KEY = Environment.SECRET_KEY
 
+    REQUEST_MIN_DURATION_HOURS = 1
+    REQUEST_MIN_DURATION_SECONDS = REQUEST_MIN_DURATION_HOURS * 3600
+
     DATA_DIR = './data'
 
     IMAGES_WAY = 'images'

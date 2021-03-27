@@ -21,6 +21,10 @@ def datetime2str(dt: datetime) -> str:
     return dt.replace(microsecond=0).isoformat()
 
 
+def str2datetime(value: str) -> datetime:
+    return parser.parse(value)
+
+
 def validate_iso8601(value: str):
     try:
         parser.parse(value)
