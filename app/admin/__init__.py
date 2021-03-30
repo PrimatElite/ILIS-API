@@ -18,6 +18,7 @@ class IndexView(AdminIndexView):
     @expose('/')
     def index(self):
         if is_user_authenticated():
+            self._template_args['access_token'] = session['_token']
             return super(IndexView, self).index()
         return redirect(url_for('.login_view'))
 

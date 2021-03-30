@@ -22,3 +22,28 @@
 .separator {
     margin: 5px 0;
 }
+
+#token-icon {
+    margin-left: 4px;
+    cursor: pointer;
+}
+
+#token-tooltip {
+    display: none;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-weight: bold;
+}
+
+#token-icon:hover #token-tooltip {
+    display: block;
+}
+
+#token-field {
+    border-color: transparent;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
+    color: #999;
+    padding: 0;
+    cursor: default;
+}
