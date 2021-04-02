@@ -10,10 +10,6 @@ from ...utils.swagger_models import ItemsModels
 from ...utils.views import QuerySelectField
 
 
-def _get_users_query() -> BaseQuery:
-    return Users.query.order_by(Users.user_id)
-
-
 def _get_user_label(user: Users) -> str:
     label = f'{user.user_id}'
     for value in [user.name, user.surname]:
