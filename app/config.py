@@ -49,7 +49,7 @@ class Config:
 
     DATA_DIR = './data'
 
-    IMAGES_WAY = 'images'
+    IMAGES_WAY = 'images/'
     IMAGES_DIR = os.path.join(DATA_DIR, IMAGES_WAY)
     IMAGES_TYPES = ['jpeg', 'png']
     MAX_IMAGE_LENGTH_MB = 10

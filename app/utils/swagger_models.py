@@ -1,4 +1,5 @@
-from flask_restplus import fields, Namespace
+from flask_restplus import fields, Namespace, reqparse
+import werkzeug
 
 from ..models.enums import EnumLoginService, EnumRequestStatus, EnumUserRole
 
@@ -122,6 +123,24 @@ class ItemsModels:
     requested_item = api.clone('requested_item', item_public, {
         'owner': fields.Nested(UsersModels.user_with_optional_contacts, required=True, description='The item owner'),
     })
+
+
+class ImagesModels:
+    api = Namespace('images', description='Images operations')
+    create_image = api.model('create_image', {
+        'item_id': fields.Integer(required=True, description='The image item')
+    })
+    image = api.model('image', {
+        'image_id': fields.Integer(required=True, description='The image identifier'),
+        'item_id': fields.Integer(required=True, description='The image item'),
+        'path': fields.String(required=True, description='The image address')
+    })
+    file_upload = reqparse.RequestParser()
+    file_upload.add_argument('image',
+                             type=werkzeug.datastructures.FileStorage,
+                             location='files',
+                             required=True,
+                             help='Image file')
 
 
 class RequestsModels:
