@@ -1,4 +1,4 @@
-from flask_restplus import marshal, Resource
+from flask_restplus import Resource
 from http import HTTPStatus
 from collections import OrderedDict
 
@@ -65,7 +65,7 @@ class ImageByIdApi(Resource):
         api.abort(HTTPStatus.NOT_FOUND, f'Image {image_id} not found')
 
     @api.doc('delete_image_by_id', security='access-token')
-    @api.response(204, 'Item deleted')
+    @api.response(204, 'Image deleted')
     @api.response(401, 'Unauthorized')
     @api.response(403, 'Forbidden operation')
     @api.response(404, 'Not found')
@@ -80,7 +80,7 @@ class ImageByIdApi(Resource):
 class ImagesMeApi(Resource):
     @api.doc('create_image_me')
     @api.expect(ImagesModels.file_upload, validate=True)
-    @api.response(201, 'Item created', ImagesModels.image)
+    @api.response(201, 'Image created', ImagesModels.image)
     @api.response(400, 'Bad request')
     @api.response(401, 'Unauthorized')
     @api.response(403, 'Forbidden operation')
