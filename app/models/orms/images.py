@@ -1,5 +1,7 @@
+import os
+
 from sqlalchemy import Column, Integer, String
-from typing import Union
+from typing import List, Optional
 
 from .base import Base
 from ..db import seq
@@ -13,25 +15,25 @@ class Images(Base):
     path = Column(String, nullable=False)
 
     @classmethod
-    def get_images(cls):
+    def get_images(cls) -> List[dict]:
         return [cls.orm2dict(image) for image in cls.query.order_by(cls.image_id).all()]
 
     @classmethod
-    def get_images_by_item(cls, item_id: int):
+    def get_images_by_item(cls, item_id: int) -> List[dict]:
         return [cls.orm2dict(image) for image in cls.query.filter_by(item_id=item_id).order_by(cls.image_id).all()]
 
     @classmethod
-    def get_image_by_id(cls, image_id: int):
+    def get_image_by_id(cls, image_id: int) -> Optional[dict]:
         return cls.orm2dict(cls.query.filter_by(image_id=image_id).first())
 
     get_obj_by_id = get_image_by_id
 
     @classmethod
-    def get_image_by_name(cls, image_name: int):
+    def get_image_by_name(cls, image_name: int) -> Optional[dict]:
         return cls.orm2dict(cls.query.filter_by(path=image_name).first())
 
     @classmethod
-    def create(cls, data: dict) -> Union[dict, None]:
+    def create(cls, data: dict) -> Optional[dict]:
         from .items import Items
 
         item_dict = Items.get_item_by_id(data['item_id'])
@@ -45,3 +47,8 @@ class Images(Base):
     def delete_images_by_item(cls, item_id: int):
         for image_dict in cls.get_images_by_item(item_id):
             cls._delete(image_dict)
+
+    @classmethod
+    def after_delete(cls, image_dict: dict):
+        file = image_dict['path']
+        os.remove(file)

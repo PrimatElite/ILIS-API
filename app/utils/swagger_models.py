@@ -127,15 +127,13 @@ class ItemsModels:
 
 class ImagesModels:
     api = Namespace('images', description='Images operations')
-    create_image = api.model('create_image', {
-        'item_id': fields.Integer(required=True, description='The image item')
-    })
     image = api.model('image', {
         'image_id': fields.Integer(required=True, description='The image identifier'),
         'item_id': fields.Integer(required=True, description='The image item'),
         'path': fields.String(required=True, description='The image address')
     })
     file_upload = reqparse.RequestParser()
+    file_upload.add_argument('item_id', type=int, required=True, help='Write item id')
     file_upload.add_argument('image',
                              type=werkzeug.datastructures.FileStorage,
                              location='files',
