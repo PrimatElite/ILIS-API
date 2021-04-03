@@ -64,14 +64,14 @@ class ImageByIdApi(Resource):
             return image
         api.abort(HTTPStatus.NOT_FOUND, f'Image {image_id} not found')
 
-    @api.doc('delete_item_by_id', security='access-token')
+    @api.doc('delete_image_by_id', security='access-token')
     @api.response(204, 'Item deleted')
     @api.response(401, 'Unauthorized')
     @api.response(403, 'Forbidden operation')
     @api.response(404, 'Not found')
     @token_required
     def delete(self, image_id: int):
-        """Delete item by id"""
+        """Delete image by id"""
         return delete_object_by_id(api, Images, image_id)
 
 
@@ -87,7 +87,7 @@ class ImagesMeApi(Resource):
     @api.response(404, 'Not found')
     @token_required
     def post(self):
-        """Create new item in own storage"""
+        """Upload new image to own item"""
         user = get_user_from_request(api)
         args = ImagesModels.file_upload.parse_args()
         time = Images.now().replace(microsecond=0).isoformat()
