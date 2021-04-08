@@ -32,8 +32,13 @@ def _render_owner(view: FlaskBaseView, context: Context, model: Items, name: str
     return _get_user_label(Users.query.filter_by(user_id=storage.user_id).first())
 
 
+def _render_remaining_count(view: FlaskBaseView, context: Context, model: Items, name: str) -> str:
+    remaining_count = Items.get_remaining_count(Items.orm2dict(model))
+    return f'{remaining_count}'
+
+
 class ItemsView(BaseView):
-    extra_columns = ['owner']
+    extra_columns = ['owner', 'remaining_count']
 
     column_default_sort = 'item_id'
 
@@ -41,11 +46,13 @@ class ItemsView(BaseView):
                             'updated_at']
 
     column_formatters = {
-        'owner': _render_owner
+        'owner': _render_owner,
+        'remaining_count': _render_remaining_count
     }
 
     column_descriptions = {field: value.description for field, value in ItemsModels.item.items()}
     column_descriptions['owner'] = 'The item owner'
+    column_descriptions['remaining_count'] = 'The remaining amount of this item in storage'
 
     column_searchable_list = column_sortable_list
 
