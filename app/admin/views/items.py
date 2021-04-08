@@ -33,7 +33,7 @@ def _render_owner(view: FlaskBaseView, context: Context, model: Items, name: str
 
 
 def _render_remaining_count(view: FlaskBaseView, context: Context, model: Items, name: str) -> str:
-    remaining_count = Items.get_remaining_count(Items.orm2dict(model))
+    remaining_count = model.additional_fields['remaining_count'](model.item_id)
     return f'{remaining_count}'
 
 
