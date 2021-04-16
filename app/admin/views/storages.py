@@ -7,19 +7,11 @@ from sqlalchemy.orm.scoping import scoped_session
 from .base import BaseView
 from ...models import Storages, Users
 from ...utils.swagger_models import StoragesModels
-from ...utils.views import QuerySelectField
+from ...utils.views import get_user_label as _get_user_label, QuerySelectField
 
 
 def _get_users_query() -> BaseQuery:
     return Users.query.order_by(Users.user_id)
-
-
-def _get_user_label(user: Users) -> str:
-    label = f'{user.user_id}'
-    for value in [user.name, user.surname]:
-        if value is not None:
-            label += f' {value}'
-    return label
 
 
 def _render_owner(view: FlaskBaseView, context: Context, model: Storages, name: str) -> str:

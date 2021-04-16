@@ -60,6 +60,6 @@ def init_app(app: Flask):
 
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', 'Fields missing from ruleset', UserWarning)
-        admin.add_view(ItemsView(db.session))
-        admin.add_view(StoragesView(db.session))
         admin.add_view(UsersView(db.session))
+        admin.add_view(StoragesView(db.session))
+        admin.add_view(ItemsView(db.session))
