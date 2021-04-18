@@ -4,7 +4,7 @@ from flask_admin.model.base import BaseView as FlaskBaseView
 from flask_sqlalchemy import BaseQuery
 from jinja2.runtime import Context
 from sqlalchemy.orm.scoping import scoped_session
-from typing import Type
+from typing import Optional, Type
 from wtforms.form import FormMeta
 
 from .base import BaseView
@@ -13,7 +13,9 @@ from ...utils.swagger_models import ItemsModels
 from ...utils.views import get_user_label, QuerySelectField
 
 
-def _get_storages_query(model: Items) -> BaseQuery:
+def _get_storages_query(model: Optional[Items] = None) -> BaseQuery:
+    if model is None:
+        return Storages.query.order_by(Storages.storage_id)
     storage = Storages.query.filter_by(storage_id=model.storage_id).subquery()
     return Storages.query.filter_by(user_id=storage.c.user_id).order_by(Storages.storage_id)
 
@@ -92,7 +94,6 @@ class ItemsView(BaseView):
         def query_factory_by_id() -> BaseQuery:
             return _get_storages_query(model=obj)
 
-        self.form_args['storage_id']['query_factory'] = query_factory_by_id
         self._edit_form_class.storage_id.kwargs['query_factory'] = query_factory_by_id
         return self._edit_form_class(get_form_data(), obj=obj)
 
