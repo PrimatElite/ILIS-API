@@ -1,25 +1,21 @@
-import logging
-
-from flask import flash
-from flask_admin.babel import gettext
 from flask_admin.form import BaseForm, rules
+from flask_admin.helpers import get_form_data
 from flask_admin.model.base import BaseView as FlaskBaseView
 from flask_sqlalchemy import BaseQuery
 from jinja2.runtime import Context
 from sqlalchemy.orm.scoping import scoped_session
 from typing import Type
+from wtforms.form import FormMeta
 
 from .base import BaseView
 from ...models import Items, Storages, Users
 from ...utils.swagger_models import ItemsModels
 from ...utils.views import get_user_label, QuerySelectField
 
-# Set up logger
-log = logging.getLogger("flask-admin.sqla")
 
-
-def _get_storages_query() -> BaseQuery:
-    return Storages.query.order_by(Storages.storage_id)
+def _get_storages_query(model: Items) -> BaseQuery:
+    storage = Storages.query.filter_by(storage_id=model.storage_id).subquery()
+    return Storages.query.filter_by(user_id=storage.c.user_id).order_by(Storages.storage_id)
 
 
 def _get_storage_label(storage: Storages) -> str:
@@ -89,31 +85,16 @@ class ItemsView(BaseView):
     def __init__(self, session: scoped_session, **kwargs):
         super(ItemsView, self).__init__(Items, session, **kwargs)
 
-    def update_model(self, form, model):
+    def edit_form(self, obj=None) -> Type[FormMeta]:
         """
-            Update model from form.
-
-            :param form:
-                Form instance
-            :param model:
-                Model instance
+            Instantiate model editing form and return it.
         """
-        try:
-            self._on_model_change(form, model, False)
-            form.populate_obj(model)
-            self.session.commit()
-        except Exception as ex:
-            if not self.handle_view_exception(ex):
-                flash(gettext('Failed to update record. %(error)s', error=str(ex)), 'error')
-                log.exception('Failed to update record.')
+        def query_factory_by_id() -> BaseQuery:
+            return _get_storages_query(model=obj)
 
-            self.session.rollback()
-
-            return False
-        else:
-            self.after_model_change(form, model, False)
-
-        return True
+        self.form_args['storage_id']['query_factory'] = query_factory_by_id
+        self._edit_form_class.storage_id.kwargs['query_factory'] = query_factory_by_id
+        return self._edit_form_class(get_form_data(), obj=obj)
 
     def on_model_change(self, form: Type[BaseForm], model: Items, is_created: bool):
         if not is_created:
