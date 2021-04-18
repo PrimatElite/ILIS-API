@@ -121,6 +121,5 @@ class ItemsView(BaseView):
                     or form.data['count'] < 1:
                 raise Exception(f'Item {model.item_id} count can\'t be changed')
             old_storage = Storages.query.filter_by(storage_id=model.storage_id).first()
-            res = form.data['storage_id'].user_id != old_storage.user_id
             if form.data['storage_id'].user_id != old_storage.user_id:
                 raise Exception(f'Item {model.item_id} storage can\'t be changed to another user')
