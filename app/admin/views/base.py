@@ -1,6 +1,8 @@
 from flask import current_app, flash, redirect, Response
 from flask_admin import expose
+from flask_admin.babel import gettext
 from flask_admin.contrib.sqla import ModelView
+from flask_admin.contrib.sqla.view import log
 from flask_admin.form import BaseForm
 from flask_login import login_url
 from math import ceil
@@ -29,6 +31,32 @@ class BaseView(ModelView):
     def inaccessible_callback(self, name: str, **kwargs) -> Response:
         flash('Please, log in', 'error')
         return redirect(login_url(current_app.login_manager.login_view))
+
+    def update_model(self, form: Type[BaseForm], model: Type[Base]) -> bool:
+        """
+            Update model from form.
+
+            :param form:
+                Form instance
+            :param model:
+                Model instance
+        """
+        try:
+            self._on_model_change(form, model, False)
+            form.populate_obj(model)
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(gettext('Failed to update record. %(error)s', error=str(ex)), 'error')
+                log.exception('Failed to update record.')
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, False)
+
+        return True
 
     def after_model_change(self, form: Type[BaseForm], model: Type[Base], is_created: bool):
         if is_created:
