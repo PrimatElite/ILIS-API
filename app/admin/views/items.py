@@ -1,3 +1,7 @@
+import logging
+
+from flask import flash
+from flask_admin.babel import gettext
 from flask_admin.form import BaseForm, rules
 from flask_admin.model.base import BaseView as FlaskBaseView
 from flask_sqlalchemy import BaseQuery
@@ -8,7 +12,10 @@ from typing import Type
 from .base import BaseView
 from ...models import Items, Storages, Users
 from ...utils.swagger_models import ItemsModels
-from ...utils.views import get_user_label as _get_user_label, QuerySelectField
+from ...utils.views import get_user_label, QuerySelectField
+
+# Set up logger
+log = logging.getLogger("flask-admin.sqla")
 
 
 def _get_storages_query() -> BaseQuery:
@@ -21,7 +28,7 @@ def _get_storage_label(storage: Storages) -> str:
 
 def _render_owner(view: FlaskBaseView, context: Context, model: Items, name: str) -> str:
     storage = Storages.query.filter_by(storage_id=model.storage_id).subquery()
-    return _get_user_label(Users.query.filter_by(user_id=storage.c.user_id).first())
+    return get_user_label(Users.query.filter_by(user_id=storage.c.user_id).first())
 
 
 def _render_remaining_count(view: FlaskBaseView, context: Context, model: Items, name: str) -> str:
@@ -82,8 +89,39 @@ class ItemsView(BaseView):
     def __init__(self, session: scoped_session, **kwargs):
         super(ItemsView, self).__init__(Items, session, **kwargs)
 
+    def update_model(self, form, model):
+        """
+            Update model from form.
+
+            :param form:
+                Form instance
+            :param model:
+                Model instance
+        """
+        try:
+            self._on_model_change(form, model, False)
+            form.populate_obj(model)
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(gettext('Failed to update record. %(error)s', error=str(ex)), 'error')
+                log.exception('Failed to update record.')
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, False)
+
+        return True
+
     def on_model_change(self, form: Type[BaseForm], model: Items, is_created: bool):
         if not is_created:
             if form.data['count'] < model.count - Items.additional_fields['remaining_count'](model.item_id)\
                     or form.data['count'] < 1:
                 raise Exception(f'Item {model.item_id} count can\'t be changed')
+            old_storage_sub = Items.query.filter_by(item_id=model.item_id).subquery()
+            old_storage = Storages.query.filter_by(storage_id=old_storage_sub.c.storage_id).first()
+            res = form.data['storage_id'].user_id != old_storage.user_id
+            if form.data['storage_id'].user_id != old_storage.user_id:
+                raise Exception(f'Item {model.item_id} storage can\'t be changed to another user')

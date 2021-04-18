@@ -7,7 +7,7 @@ from sqlalchemy.orm.scoping import scoped_session
 from .base import BaseView
 from ...models import Storages, Users
 from ...utils.swagger_models import StoragesModels
-from ...utils.views import get_user_label as _get_user_label, QuerySelectField
+from ...utils.views import get_user_label, QuerySelectField
 
 
 def _get_users_query() -> BaseQuery:
@@ -15,7 +15,7 @@ def _get_users_query() -> BaseQuery:
 
 
 def _render_owner(view: FlaskBaseView, context: Context, model: Storages, name: str) -> str:
-    return _get_user_label(Users.query.filter_by(user_id=model.user_id).first())
+    return get_user_label(Users.query.filter_by(user_id=model.user_id).first())
 
 
 class StoragesView(BaseView):
@@ -50,7 +50,7 @@ class StoragesView(BaseView):
     form_args = {
         'user_id': {
             'query_factory': _get_users_query,
-            'get_label': _get_user_label
+            'get_label': get_user_label
         }
     }
 
