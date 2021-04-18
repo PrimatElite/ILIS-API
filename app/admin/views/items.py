@@ -98,10 +98,11 @@ class ItemsView(BaseView):
         return self._edit_form_class(get_form_data(), obj=obj)
 
     def on_model_change(self, form: Type[BaseForm], model: Items, is_created: bool):
-        if not is_created:
+        if is_created:
+            if form.data['count'] < 1:
+                raise Exception(f'Item can\'t be created. Invalid count')
+        else:
             if form.data['count'] < model.count - Items.additional_fields['remaining_count'](model.item_id)\
                     or form.data['count'] < 1:
                 raise Exception(f'Item {model.item_id} count can\'t be changed')
-            old_storage = Storages.query.filter_by(storage_id=model.storage_id).first()
-            if form.data['storage_id'].user_id != old_storage.user_id:
-                raise Exception(f'Item {model.item_id} storage can\'t be changed to another user')
+
