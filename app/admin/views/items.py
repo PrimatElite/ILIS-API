@@ -30,7 +30,7 @@ def _render_owner(view: FlaskBaseView, context: Context, model: Items, name: str
 
 
 def _render_remaining_count(view: FlaskBaseView, context: Context, model: Items, name: str) -> str:
-    remaining_count = Items.additional_fields['remaining_count'](model.item_id)
+    remaining_count = Items.get_remaining_count(Items.orm2dict(model))
     return f'{remaining_count}'
 
 
@@ -102,7 +102,6 @@ class ItemsView(BaseView):
             if form.data['count'] < 1:
                 raise Exception(f'Item can\'t be created. Invalid count')
         else:
-            if form.data['count'] < model.count - Items.additional_fields['remaining_count'](model.item_id)\
+            if form.data['count'] < model.count - Items.get_remaining_count(Items.orm2dict(model)) \
                     or form.data['count'] < 1:
                 raise Exception(f'Item {model.item_id} count can\'t be changed')
-
