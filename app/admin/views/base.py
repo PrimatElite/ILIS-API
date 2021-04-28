@@ -32,6 +32,33 @@ class BaseView(ModelView):
         flash('Please, log in', 'error')
         return redirect(login_url(current_app.login_manager.login_view))
 
+    def create_model(self, form: Type[BaseForm]):
+        """
+            Create model from form.
+
+            :param form:
+                Form instance
+        """
+        try:
+            model = self.build_new_instance()
+
+            form.populate_obj(model)
+            self._on_model_change(form, model, True)
+            self.session.add(model)
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(gettext('Failed to create record. %(error)s', error=str(ex)), 'error')
+                log.exception('Failed to create record.')
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, True)
+
+        return model
+
     def update_model(self, form: Type[BaseForm], model: Type[Base]) -> bool:
         """
             Update model from form.

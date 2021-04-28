@@ -66,8 +66,9 @@ class Requests(Base):
                 for request in cls.query.filter_by(user_id=user_id).order_by(cls.request_id).all()]
 
     @classmethod
-    def get_request_by_item_user(cls, item_id: int, user_id: int) -> Optional[dict]:
-        return cls.orm2dict(cls.query.filter_by(item_id=item_id, user_id=user_id).first())
+    def get_requests_by_item_user(cls, item_id: int, user_id: int) -> List[dict]:
+        return [cls.orm2dict(request)
+                for request in cls.query.filter_by(item_id=item_id, user_id=user_id).order_by(cls.request_id).all()]
 
     @classmethod
     def create(cls, data: dict) -> Optional[dict]:
@@ -84,14 +85,25 @@ class Requests(Base):
         if storage['user_id'] == user['user_id']:
             return None
 
-        request_duration = (str2datetime(data['rent_ends_at']) - str2datetime(data['rent_starts_at'])).total_seconds()
+        rent_start = str2datetime(data['rent_starts_at'])
+        rent_end = str2datetime(data['rent_ends_at'])
+        request_duration = (rent_end - rent_start).total_seconds()
         if request_duration < current_app.config['REQUEST_MIN_DURATION_SECONDS']:
             return None
 
-        request_dict = cls.get_request_by_item_user(data['item_id'], data['user_id'])
-        if request_dict is None:
-            request = cls.dict2cls(data, False).add()
-            request_dict = cls.orm2dict(request)
+        existing_requests = cls.get_requests_by_item_user(data['item_id'], data['user_id'])
+        for existing_request in filter(lambda r: r['status'] in [EnumRequestStatus.BOOKED.name,
+                                                                 EnumRequestStatus.DELAYED.name,
+                                                                 EnumRequestStatus.LENT.name], existing_requests):
+            existing_rent_start = str2datetime(existing_request['rent_starts_at'])
+            existing_rent_end = str2datetime(existing_request['rent_ends_at'])
+            if existing_rent_start <= rent_start < existing_rent_end or \
+                    existing_rent_start <= rent_end < existing_rent_end or \
+                    (rent_start < existing_rent_start and rent_end >= existing_rent_end):
+                return None
+
+        request = cls.dict2cls(data, False).add()
+        request_dict = cls.orm2dict(request)
         return request_dict
 
     @classmethod

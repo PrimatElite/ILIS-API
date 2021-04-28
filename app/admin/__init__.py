@@ -7,7 +7,7 @@ from http import HTTPStatus
 from urllib.parse import quote
 
 from .login import init_app as login_init_app, is_user_authenticated, LoginForm
-from .views import ItemsView, StoragesView, UsersView
+from .views import ItemsView, RequestsView, StoragesView, UsersView
 from ..oauth2 import get_service
 from ..models.db import db
 from ..models.orms.users import Users
@@ -63,3 +63,4 @@ def init_app(app: Flask):
         admin.add_view(UsersView(db.session))
         admin.add_view(StoragesView(db.session))
         admin.add_view(ItemsView(db.session))
+        admin.add_view(RequestsView(db.session))
