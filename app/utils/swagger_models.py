@@ -82,6 +82,22 @@ class StoragesModels:
     }, create_storage)
 
 
+class ImagesModels:
+    api = Namespace('images', description='Images operations')
+    image = api.model('image', {
+        'image_id': fields.Integer(required=True, description='The image identifier'),
+        'item_id': fields.Integer(required=True, description='The image item'),
+        'path': fields.String(required=True, description='The image address')
+    })
+    file_upload = reqparse.RequestParser()
+    file_upload.add_argument('item_id', type=int, required=True, help='Write item id')
+    file_upload.add_argument('image',
+                             type=werkzeug.datastructures.FileStorage,
+                             location='files',
+                             required=True,
+                             help='Image file')
+
+
 class ItemsModels:
     api = Namespace('items', description='Items operations')
     create_item = api.model('create_item', {
@@ -124,21 +140,41 @@ class ItemsModels:
         'owner': fields.Nested(UsersModels.user_with_optional_contacts, required=True, description='The item owner'),
     })
 
+    create_item_with_images = api.parser()
+    create_item_with_images.add_argument('storage_id', type=int, required=True, help='The item storage')
+    create_item_with_images.add_argument('name_ru', type=str, required=True, help='The item name in Russian')
+    create_item_with_images.add_argument('name_en', type=str, required=True, help='The item name in English')
+    create_item_with_images.add_argument('desc_ru', type=str, required=True, help='The item description in Russian')
+    create_item_with_images.add_argument('desc_en', type=str, required=True, help='The item description in English')
+    create_item_with_images.add_argument('count', type=int, required=True, help='The amount of this item in storage')
+    create_item_with_images.add_argument('image_1',
+                                         type=werkzeug.datastructures.FileStorage,
+                                         location='files',
+                                         required=True,
+                                         help='Image file #1')
+    for n in range(2, 6):
+        create_item_with_images.add_argument(f'image_{n}',
+                                      type=werkzeug.datastructures.FileStorage,
+                                      location='files',
+                                      help=f'Image file #{n}')
 
-class ImagesModels:
-    api = Namespace('images', description='Images operations')
-    image = api.model('image', {
-        'image_id': fields.Integer(required=True, description='The image identifier'),
-        'item_id': fields.Integer(required=True, description='The image item'),
-        'path': fields.String(required=True, description='The image address')
-    })
-    file_upload = reqparse.RequestParser()
-    file_upload.add_argument('item_id', type=int, required=True, help='Write item id')
-    file_upload.add_argument('image',
-                             type=werkzeug.datastructures.FileStorage,
-                             location='files',
-                             required=True,
-                             help='Image file')
+    update_item_with_images = api.parser()
+    update_item_with_images.add_argument('item_id', type=int, required=True, help='The item identifier')
+    update_item_with_images.add_argument('storage_id', type=int, help='The item storage')
+    update_item_with_images.add_argument('name_ru', type=str, help='The item name in Russian')
+    update_item_with_images.add_argument('name_en', type=str, help='The item name in English')
+    update_item_with_images.add_argument('desc_ru', type=str, help='The item description in Russian')
+    update_item_with_images.add_argument('desc_en', type=str, help='The item description in English')
+    update_item_with_images.add_argument('count', type=int, help='The amount of this item in storage')
+    update_item_with_images.add_argument('image_1',
+                                         type=werkzeug.datastructures.FileStorage,
+                                         location='files',
+                                         help='Image file #1')
+    for n in range(2, 6):
+        update_item_with_images.add_argument(f'image_{n}',
+                                             type=werkzeug.datastructures.FileStorage,
+                                             location='files',
+                                             help=f'Image file #{n}')
 
 
 class RequestsModels:
