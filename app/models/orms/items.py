@@ -1,11 +1,12 @@
+from collections import OrderedDict
 from sqlalchemy import Column, DateTime, Integer, String
 from typing import List, Optional
 
 from .base import Base
-# TODO import Images
-# from .images import Images
+from .images import Images
 from .requests import Requests
 from ..db import seq
+from ...utils.images import get_file_dest
 
 
 class Items(Base):
@@ -22,14 +23,14 @@ class Items(Base):
     updated_at = Column(DateTime, default=Base.now, onupdate=Base.now)
 
     additional_fields = {
-        'remaining_count': lambda item_id: Items.get_remaining_count(Items.get_item_by_id(item_id))
+        'remaining_count': lambda item_id: Items.get_remaining_count(Items.get_item_by_id(item_id)),
+        'images': lambda item_id: Images.get_images_by_item(item_id)
     }
 
     fields_to_update = ['storage_id', 'name_ru', 'name_en', 'desc_ru', 'desc_en', 'count']
     simple_fields_to_update = ['name_ru', 'name_en', 'desc_ru', 'desc_en']
 
-    # TODO add image deleter link in item
-    delete_relation_funcs = [Requests.delete_requests_by_item]
+    delete_relation_funcs = [Requests.delete_requests_by_item, Images.delete_images_by_item]
 
     @classmethod
     def get_items(cls) -> List[dict]:
@@ -59,6 +60,15 @@ class Items(Base):
         if storage_dict is not None:
             item = cls.dict2cls(data, False).add()
             item_dict = cls.orm2dict(item)
+            if item_dict is not None:
+                for img in data['images']:
+                    info = f'item_{item_dict["item_id"]}_{img["arg_name"]}'
+                    file = get_file_dest(img['file'], info)
+                    data_img = OrderedDict([])
+                    data_img['item_id'] = item_dict['item_id']
+                    data_img['path'] = file
+                    Images.create(data_img)
+                    img['file'].save(file)
             return item_dict
         return None
 

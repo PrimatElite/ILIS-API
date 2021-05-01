@@ -134,7 +134,8 @@ class ItemsModels:
     }, create_item, {
         'remaining_count': fields.Integer(required=True, description='The remaining amount of this item in storage'),
         'created_at': fields.DateTime(required=True, description='The item created datetime'),
-        'updated_at': fields.DateTime(required=True, description='The item updated datetime')
+        'updated_at': fields.DateTime(required=True, description='The item updated datetime'),
+        'images': fields.List(fields.Nested(ImagesModels.image, required=True, description='Item images'))
     })
     requested_item = api.clone('requested_item', item_public, {
         'owner': fields.Nested(UsersModels.user_with_optional_contacts, required=True, description='The item owner'),

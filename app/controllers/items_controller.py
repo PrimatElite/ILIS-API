@@ -4,11 +4,10 @@ from http import HTTPStatus
 from sqlalchemy import or_
 from werkzeug.datastructures import FileStorage
 
-from ..models import Images, Items, Storages, Users
+from ..models import Items, Storages, Users
 from ..utils.auth import check_admin, get_user_from_request, token_required
-from ..utils.images import get_file_dest
 from ..utils.swagger import delete_object_by_id, get_object_with_additional_fields, get_objects_with_additional_fields
-from ..utils.swagger_models import ImagesModels, ItemsModels
+from ..utils.swagger_models import ItemsModels
 
 
 api = ItemsModels.api
@@ -30,7 +29,7 @@ class ItemsApi(Resource):
 
     @api.doc('create_item')
     @api.expect(ItemsModels.create_item_with_images, validate=True)
-    @api.response(201, 'Item created', [ItemsModels.item, [ImagesModels.image]])
+    @api.response(201, 'Item created', ItemsModels.item)
     @api.response(400, 'Bad request')
     @api.response(401, 'Unauthorized')
     @api.response(403, 'Forbidden operation')
@@ -41,30 +40,20 @@ class ItemsApi(Resource):
         requester = get_user_from_request(api)
         check_admin(api, requester)
         args = ItemsModels.create_item_with_images.parse_args()
-
-        time = Items.now().replace(microsecond=0).isoformat()
-        t = time.replace(':', '-')
         files = []
 
         data = OrderedDict([])
+        data['images'] = []
         for item_arg in args:
             if item_arg in ItemsModels.item:
                 data[item_arg] = args[item_arg]
             if type(args[item_arg]) is FileStorage:
-                files.append(args[item_arg])
+                data['images'].append({'arg_name': item_arg, 'file': args[item_arg]})
+                files.append({'arg_name': item_arg, 'file': args[item_arg]})
 
         item = Items.create(data)
         if item is not None:
-            images = []
-            for img in files:
-                file = get_file_dest(api, img, t)
-                data_img = OrderedDict([])
-                data_img['item_id'] = item['item_id']
-                data_img['path'] = file
-                image = Images.create(data_img)
-                images.append(image)
-                img.save(file)
-            return [get_object_with_additional_fields(item, Items), images], 201
+            return get_object_with_additional_fields(item, Items), 201
         api.abort(HTTPStatus.NOT_FOUND, f'Storage {data["storage_id"]} not found')
 
     @api.doc('update_item')
