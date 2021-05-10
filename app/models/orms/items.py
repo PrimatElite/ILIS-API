@@ -6,6 +6,7 @@ from .base import Base
 # from .images import Images
 from .requests import Requests
 from ..db import seq
+from ...cache import cache
 
 
 class Items(Base):
@@ -32,14 +33,17 @@ class Items(Base):
     delete_relation_funcs = [Requests.delete_requests_by_item]
 
     @classmethod
+    @cache.cache_list('get_items', field='item_id')
     def get_items(cls) -> List[dict]:
         return [cls.orm2dict(item) for item in cls.query.order_by(cls.item_id).all()]
 
     @classmethod
+    @cache.cache_list('get_items_by_storage', field='item_id')
     def get_items_by_storage(cls, storage_id: int) -> List[dict]:
         return [cls.orm2dict(item) for item in cls.query.filter_by(storage_id=storage_id).order_by(cls.item_id).all()]
 
     @classmethod
+    @cache.cache_element('get_item_by_id')
     def get_item_by_id(cls, item_id: int) -> Optional[dict]:
         return cls.orm2dict(cls.query.filter_by(item_id=item_id).first())
 
@@ -59,6 +63,7 @@ class Items(Base):
         if storage_dict is not None:
             item = cls.dict2cls(data, False).add()
             item_dict = cls.orm2dict(item)
+            cls.after_create(item_dict)
             return item_dict
         return None
 
@@ -80,8 +85,8 @@ class Items(Base):
                 item = item._update_fields(data, ['count'])
             item = item.add()
             item_dict = cls.orm2dict(item)
-            return item_dict
-        return None
+            cls.after_update(item_dict)
+        return item_dict
 
     @classmethod
     def can_delete(cls, item_dict: dict) -> bool:
@@ -92,3 +97,6 @@ class Items(Base):
     def delete_items_by_storage(cls, storage_id: int):
         for item_dict in cls.get_items_by_storage(storage_id):
             cls._delete(item_dict)
+
+
+Items.__cached__ = [Items.get_items, Items.get_items_by_storage, Items.get_item_by_id]

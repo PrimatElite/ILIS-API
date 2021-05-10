@@ -3,7 +3,7 @@ import inspect
 from functools import wraps
 from itertools import chain
 from redis import StrictRedis
-from typing import Callable, Optional, Union
+from typing import Callable, List, Optional, Union
 
 from .namespace import CacheNamespaceManager
 from .value import ValueList, ValueObject
@@ -18,13 +18,13 @@ def _has_function_self(func: Callable):
     return args and args[0] in ('self', 'cls')
 
 
-def _decorate_cache_element(decorator_args: tuple, cache: 'Cache'):
-    def decorate(func: Callable):
+def _decorate_cache_element(decorator_args: tuple, cache: 'Cache') -> Callable:
+    def decorate(func: Callable) -> Callable:
         namespace = _get_function_namespace(func)
         skip_self = _has_function_self(func)
 
         @wraps(func)
-        def cached(*args, **kwargs):
+        def cached(*args, **kwargs) -> dict:
             cache_args = args
             if skip_self:
                 cache_args = args[1:]
@@ -44,13 +44,13 @@ def _decorate_cache_element(decorator_args: tuple, cache: 'Cache'):
     return decorate
 
 
-def _decorate_cache_list(decorator_args: tuple, cache: 'Cache', field: str):
-    def decorate(func: Callable):
+def _decorate_cache_list(decorator_args: tuple, cache: 'Cache', field: str) -> Callable:
+    def decorate(func: Callable) -> Callable:
         namespace = _get_function_namespace(func)
         skip_self = _has_function_self(func)
 
         @wraps(func)
-        def cached(*args, **kwargs):
+        def cached(*args, **kwargs) -> List[dict]:
             cache_args = args
             if skip_self:
                 cache_args = args[1:]
@@ -99,10 +99,10 @@ class Cache:
             Cache.managers[namespace] = CacheNamespaceManager(namespace, self.client)
             return ValueList(key, Cache.managers[namespace], field, creation_func)
 
-    def cache_element(self, *args):
+    def cache_element(self, *args) -> Callable:
         return _decorate_cache_element(args, self)
 
-    def cache_list(self, *args, field: str):
+    def cache_list(self, *args, field: str) -> Callable:
         return _decorate_cache_list(args, self, field)
 
     def get_value_from_function(self, func: Callable, *args) -> Union[ValueList, ValueObject]:

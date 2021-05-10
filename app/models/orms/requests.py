@@ -5,6 +5,7 @@ from typing import List, Optional
 from .base import Base
 from ..db import seq
 from ..enums import EnumRequestStatus
+from ...cache import cache
 from ...utils import str2datetime
 
 
@@ -46,26 +47,31 @@ class Requests(Base):
         return self.status in [EnumRequestStatus.BOOKED, EnumRequestStatus.LENT]
 
     @classmethod
+    @cache.cache_list('get_requests', field='request_id')
     def get_requests(cls) -> List[dict]:
         return [cls.orm2dict(request) for request in cls.query.order_by(cls.request_id).all()]
 
     @classmethod
+    @cache.cache_element('get_request_by_id')
     def get_request_by_id(cls, request_id: int) -> Optional[dict]:
         return cls.orm2dict(cls.query.filter_by(request_id=request_id).first())
 
     get_obj_by_id = get_request_by_id
 
     @classmethod
+    @cache.cache_list('get_requests_by_item', field='request_id')
     def get_requests_by_item(cls, item_id: int) -> List[dict]:
         return [cls.orm2dict(request)
                 for request in cls.query.filter_by(item_id=item_id).order_by(cls.request_id).all()]
 
     @classmethod
+    @cache.cache_list('get_requests_by_user', field='request_id')
     def get_requests_by_user(cls, user_id: int) -> List[dict]:
         return [cls.orm2dict(request)
                 for request in cls.query.filter_by(user_id=user_id).order_by(cls.request_id).all()]
 
     @classmethod
+    @cache.cache_list('get_requests_by_item_user', field='request_id')
     def get_requests_by_item_user(cls, item_id: int, user_id: int) -> List[dict]:
         return [cls.orm2dict(request)
                 for request in cls.query.filter_by(item_id=item_id, user_id=user_id).order_by(cls.request_id).all()]
@@ -104,6 +110,7 @@ class Requests(Base):
 
         request = cls.dict2cls(data, False).add()
         request_dict = cls.orm2dict(request)
+        cls.after_create(request_dict)
         return request_dict
 
     @classmethod
@@ -129,6 +136,7 @@ class Requests(Base):
                     request._update_fields(data, ['status'])
             request.add()
             request_dict = cls.orm2dict(request)
+            cls.after_update(request_dict)
         return request_dict
 
     @classmethod
@@ -147,3 +155,7 @@ class Requests(Base):
     @classmethod
     def delete_requests_by_user(cls, user_id: int):
         cls._delete_requests(cls.get_requests_by_user(user_id))
+
+
+Requests.__cached__ = [Requests.get_requests, Requests.get_requests_by_item, Requests.get_requests_by_user,
+                       Requests.get_requests_by_item_user, Requests.get_request_by_id]
