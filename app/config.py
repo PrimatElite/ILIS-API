@@ -17,6 +17,7 @@ class Environment:
     GOOGLE_CLIENT_SECRET = environ['GOOGLE_CLIENT_SECRET']
     VK_CLIENT_SECRET = environ['VK_CLIENT_SECRET']
     SECRET_KEY = environ['SECRET_KEY']
+    REDIS_URL = environ.get('REDIS_URL')
 
 
 class Config:
@@ -43,6 +44,8 @@ class Config:
     VK_CLIENT_SECRET = Environment.VK_CLIENT_SECRET
 
     SECRET_KEY = Environment.SECRET_KEY
+
+    REDIS_URL = Environment.REDIS_URL
 
     REQUEST_MIN_DURATION_HOURS = 1
     REQUEST_MIN_DURATION_SECONDS = REQUEST_MIN_DURATION_HOURS * 3600
