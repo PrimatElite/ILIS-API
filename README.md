@@ -44,6 +44,11 @@ It needs to set some environment variables for the correct server working.
      ```bash
      export DB_NAME=db_name
      ```
+* It needs to set variable for connection with Redis:
+  1. `REDIS_URL` - URL. By default `redis://localhost:6379`.
+     ```bash
+     export REDIS_URL=redis_url
+     ```
 * Some variables about server address:
   1. `SCHEME` - `http` or `https`
      ```bash
