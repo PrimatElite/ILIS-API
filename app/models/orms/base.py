@@ -1,9 +1,12 @@
+import inspect
+
 from collections import OrderedDict
 from datetime import datetime, timedelta
 from dateutil import parser
 from enum import Enum
 from typing import List, Optional
 
+from ...cache import cache, is_cache_list
 from ...utils import any_in, datetime2str, validate_iso8601
 from app.models.db import db
 
@@ -18,6 +21,8 @@ class Base(db.Model):
     simple_fields_to_update = []
 
     delete_relation_funcs = []
+
+    __cached__ = []
 
     @classmethod
     def now(cls) -> datetime:
@@ -93,11 +98,11 @@ class Base(db.Model):
 
     @classmethod
     def after_create(cls, obj_dict: dict):
-        pass
+        cls._update_cache(obj_dict)
 
     @classmethod
     def after_update(cls, obj_dict: dict):
-        pass
+        cls._update_cache(obj_dict)
 
     def delete_self(self) -> 'Base':
         with db.auto_commit():
@@ -112,6 +117,7 @@ class Base(db.Model):
     @classmethod
     def after_delete(cls, obj_dict: dict):
         cls._delete_relations(obj_dict[cls.get_id_name()])
+        cls._delete_cache(obj_dict)
 
     @classmethod
     def can_delete(cls, obj_dict: dict) -> bool:
@@ -132,3 +138,22 @@ class Base(db.Model):
                 return True
             return False
         return None
+
+    @classmethod
+    def _update_cache(cls, obj_dict: dict):
+        for func in cls.__cached__:
+            func_args = list(inspect.signature(func).parameters)
+            args = tuple(obj_dict[func_arg] for func_arg in func_args)
+            value = cache.get_value_from_function(func, *args)
+            value.update_value(obj_dict)
+
+    @classmethod
+    def _delete_cache(cls, obj_dict: dict):
+        for func in cls.__cached__:
+            func_args = list(inspect.signature(func).parameters)
+            args = tuple(obj_dict[func_arg] for func_arg in func_args)
+            value = cache.get_value_from_function(func, *args)
+            if is_cache_list(func):
+                value.delete_element(obj_dict)
+            else:
+                value.delete_value()
