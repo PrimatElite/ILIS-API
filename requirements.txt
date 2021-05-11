@@ -9,6 +9,7 @@ Flask-SQLAlchemy
 jsonschema
 psycopg2
 python-dateutil
+redis
 requests
 Werkzeug==0.16.1
 wtforms

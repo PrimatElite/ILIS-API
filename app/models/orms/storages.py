@@ -4,6 +4,7 @@ from typing import Union
 from .base import Base
 from .items import Items
 from ..db import seq
+from ...cache import cache
 from ...utils import all_in
 
 
@@ -24,15 +25,18 @@ class Storages(Base):
     delete_relation_funcs = [Items.delete_items_by_storage]
 
     @classmethod
+    @cache.cache_list('get_storages', field='storage_id')
     def get_storages(cls):
         return [cls.orm2dict(storage) for storage in cls.query.order_by(cls.storage_id).all()]
 
     @classmethod
+    @cache.cache_list('get_storages_by_user', field='storage_id')
     def get_storages_by_user(cls, user_id: int):
         return [cls.orm2dict(storage)
                 for storage in cls.query.filter_by(user_id=user_id).order_by(cls.storage_id).all()]
 
     @classmethod
+    @cache.cache_element('get_storage_by_id')
     def get_storage_by_id(cls, storage_id: int):
         return cls.orm2dict(cls.query.filter_by(storage_id=storage_id).first())
 
@@ -46,6 +50,7 @@ class Storages(Base):
         if user is not None:
             storage = cls.dict2cls(data, False).add()
             storage_dict = cls.orm2dict(storage)
+            cls.after_create(storage_dict)
             return storage_dict
         return None
 
@@ -60,6 +65,7 @@ class Storages(Base):
                 storage._update_fields(data, cls.location_fields_to_update)
             storage.add()
             storage_dict = cls.orm2dict(storage)
+            cls.after_update(storage_dict)
         return storage_dict
 
     @classmethod
@@ -70,3 +76,6 @@ class Storages(Base):
     def delete_storages_by_user(cls, user_id: int):
         for storage_dict in cls.get_storages_by_user(user_id):
             cls._delete(storage_dict)
+
+
+Storages.__cached__ = [Storages.get_storages, Storages.get_storages_by_user, Storages.get_storage_by_id]
