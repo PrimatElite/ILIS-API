@@ -72,6 +72,15 @@ It needs to set some environment variables for the correct server working.
      ```bash
      export SECRET_KEY=secret_key
      ```
+* Some variables for mails sending:
+  1. `MAIL_USERNAME` - Gmail login username
+     ```bash
+     export MAIL_USERNAME=mail_username
+     ```
+  2. `MAIL_PASSWORD` - Gmail login password
+     ```bash
+     export MAIL_PASSWORD=mail_password
+     ```
 
 If you are using Windows instead of Linux, then use command `set` instead of command `export`.
 
