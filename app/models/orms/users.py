@@ -1,4 +1,5 @@
-from sqlalchemy import Column, DateTime, Enum, event, Integer, String
+from sqlalchemy import Column, DateTime, Enum, event, Integer, String, Table
+from sqlalchemy.engine import Connection
 from typing import List, Optional
 
 from .base import Base
@@ -98,8 +99,8 @@ Users.__cached__ = [Users.get_users, Users.get_user_by_id, Users.get_user_by_log
 
 
 @event.listens_for(Users.__table__, 'after_create')
-def create_all(*args, **kwargs):
+def create_all(target: Table, connection: Connection, **kwargs):
     admins = get_db_initialization()['admins']
     for admin in admins:
         admin['role'] = EnumUserRole.ADMIN.name
-        Users.dict2cls(admin, False).add()
+        connection.execute(Users.__table__.insert(), admin)
