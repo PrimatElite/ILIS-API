@@ -17,7 +17,9 @@ class Environment:
     GOOGLE_CLIENT_SECRET = environ['GOOGLE_CLIENT_SECRET']
     VK_CLIENT_SECRET = environ['VK_CLIENT_SECRET']
     SECRET_KEY = environ['SECRET_KEY']
-    REDIS_URL = environ.get('REDIS_URL')
+    REDIS_URL = environ.get('REDIS_URL', 'redis://127.0.0.1:6379')
+    MAIL_USERNAME = environ['MAIL_USERNAME']
+    MAIL_PASSWORD = environ['MAIL_PASSWORD']
 
 
 class Config:
@@ -47,8 +49,19 @@ class Config:
 
     REDIS_URL = Environment.REDIS_URL
 
+    CELERY_BROKER_URL = REDIS_URL
+    CELERY_IMPORTS = ['app.tasks']
+
+    MAIL_SERVER = 'smtp.googlemail.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USERNAME = Environment.MAIL_USERNAME
+    MAIL_PASSWORD = Environment.MAIL_PASSWORD
+    MAIL_DEFAULT_SENDER = MAIL_USERNAME
+
     REQUEST_MIN_DURATION_HOURS = 1
     REQUEST_MIN_DURATION_SECONDS = REQUEST_MIN_DURATION_HOURS * 3600
+    NOTIFICATION_FACTOR = 5.0 / 6
 
     DATA_DIR = './data'
 

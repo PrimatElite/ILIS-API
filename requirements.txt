@@ -1,7 +1,9 @@
+celery
 Flask
 Flask-Admin
 Flask-Cors
 Flask-Login
+Flask-Mail
 Flask-Migrate
 flask-restplus
 Flask-Script

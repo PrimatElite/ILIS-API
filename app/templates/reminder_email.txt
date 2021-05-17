@@ -1,0 +1,9 @@
+Dear {{ username }} {{ usersurname }},
+
+We remind you that the rental of the item {{ itemname }} ends on the {{ rent_ends_on }} at {{ rent_ends_at }}.
+
+Remember to return the item to its owner.
+
+Regards,
+
+The ILIS support

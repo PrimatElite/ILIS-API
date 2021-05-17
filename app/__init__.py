@@ -1,21 +1,21 @@
 from flask import Flask
 from flask_cors import CORS
 
-from . import admin, cache, controllers, models
+from . import admin, cache, celery, controllers, mail, models
 from .config import Config
 
 
-def create_flask_app() -> Flask:
-    app = Flask(__name__)
-    app.config.from_object(Config)
-    return app
+app = Flask(__name__)
+app.config.from_object(Config)
+
+models.init_app(app)
+mail.init_app(app)
 
 
-def create_app() -> Flask:
-    app = create_flask_app()
+def init_app() -> Flask:
     CORS(app, resources={r'/*': {'origins': '*'}}, supports_credentials=True)
-    cache.init_app(app)
+    cache.init()
     controllers.init_app(app)
-    models.init_app(app)
     admin.init_app(app)
+    celery.init()
     return app
