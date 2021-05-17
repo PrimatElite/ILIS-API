@@ -101,7 +101,7 @@ class ItemsModels:
         'count': fields.Integer(min=1, description='The amount of this item in storage')
     })
     search_items = api.parser()
-    search_items.add_argument('content', type=str, required=True, help='Write items you require')
+    search_items.add_argument('query', type=str, required=True, help='Write items you require')
     item_public = api.clone('item_public', {
         'owner': fields.Nested(UsersModels.user_public, required=True, description='The item owner'),
         'item_id': fields.Integer(required=True, description='The item identifier'),
