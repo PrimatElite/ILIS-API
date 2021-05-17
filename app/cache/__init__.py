@@ -1,11 +1,9 @@
-from flask import Flask
-
 from .cache import Cache, is_cache_list
+from ..redis import redis_client
 
 
-cache = Cache()
+cache = Cache(redis_client)
 
 
-def init_app(app: Flask):
-    if app.config['REDIS_URL']:
-        cache.update_client(app.config['REDIS_URL'])
+def init():
+    cache.client.flushall()

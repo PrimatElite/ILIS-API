@@ -78,11 +78,8 @@ def is_cache_list(func: Callable):
 class Cache:
     managers = {}
 
-    def __init__(self):
-        self.client = StrictRedis()
-
-    def update_client(self, url: str):
-        self.client = StrictRedis.from_url(url)
+    def __init__(self, client: StrictRedis):
+        self.client = client
 
     def get_value_object(self, key: str, namespace: str, creation_func: Optional[Callable] = None) -> ValueObject:
         try:

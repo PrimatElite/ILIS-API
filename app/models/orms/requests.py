@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from flask import current_app
 from sqlalchemy import Column, DateTime, Enum, Integer
 from typing import List, Optional
@@ -6,6 +7,8 @@ from .base import Base
 from ..db import seq
 from ..enums import EnumRequestStatus
 from ...cache import cache
+from ...celery import has_reserved_task
+from ...redis import redis_client
 from ...utils import str2datetime
 
 
@@ -122,6 +125,29 @@ class Requests(Base):
         return request_dict['count'] <= Items.get_remaining_count(Items.get_item_by_id(request_dict['item_id']))
 
     @classmethod
+    def _send_notification(cls, args: List[int], rent_starts_at: datetime, rent_ends_at: datetime):
+        from app.tasks import send_reminder_email
+
+        with redis_client.lock(f'request_lock:{" ".join(map(str, args))}'):
+            if has_reserved_task('app.tasks.send_reminder_email', args):
+                return
+
+            rent_duration = (rent_ends_at - rent_starts_at).total_seconds()
+            eta = rent_starts_at + timedelta(seconds=int(rent_duration * current_app.config['NOTIFICATION_FACTOR']))
+            countdown = (eta - cls.now()).total_seconds()
+            send_reminder_email.apply_async(args=args, countdown=countdown)
+
+    @classmethod
+    def send_notification(cls, request: 'Requests'):
+        args = [request.user_id, request.item_id, request.request_id]
+        cls._send_notification(args, request.rent_starts_at, request.rent_ends_at)
+
+    @classmethod
+    def send_notification_dict(cls, request: dict):
+        args = [request['user_id'], request['item_id'], request['request_id']]
+        cls._send_notification(args, str2datetime(request['rent_starts_at']), str2datetime(request['rent_ends_at']))
+
+    @classmethod
     def update(cls, data: dict) -> Optional[dict]:
         request_dict = cls.get_request_by_id(data['request_id'])
         if request_dict is not None:
@@ -134,6 +160,8 @@ class Requests(Base):
                     request._update_fields(data, ['status'])
                 elif data['status'] != booked_name and data['status'] in STATUS_TRANSITION_RULES[request.status.name]:
                     request._update_fields(data, ['status'])
+                    if data['status'] == EnumRequestStatus.LENT.name:
+                        cls.send_notification(request)
             request.add()
             request_dict = cls.orm2dict(request)
             cls.after_update(request_dict)

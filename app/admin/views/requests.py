@@ -105,7 +105,10 @@ class RequestsView(BaseView):
                     raise Exception(f'Request can\'t be created. Invalid rent date interval')
         else:
             booked_name = EnumRequestStatus.BOOKED.name
-            if (form.data['status'] == booked_name and not Requests.can_book(Requests.orm2dict(model))) or \
+            if ((form.data['status'] == booked_name and not Requests.can_book(Requests.orm2dict(model))) or
                     (form.data['status'] != booked_name and
-                     form.data['status'] not in STATUS_TRANSITION_RULES[model.status.name]):
+                     form.data['status'] not in STATUS_TRANSITION_RULES[model.status.name])) and \
+                    form.data['status'] != model.status.name:
                 raise Exception(f'Request {model.request_id} status can\'t be changed')
+            if form.data['status'] == EnumRequestStatus.LENT.name:
+                Requests.send_notification(model)
