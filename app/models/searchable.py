@@ -33,13 +33,7 @@ class Searchable(db.Model):
         id_name = cls.get_id_name()
         id_column = getattr(cls, id_name)
         res = [cls.orm2dict(obj) for obj in cls.query.filter(id_column.in_(ids)).all()]
-        res_sorted = []
-        for id in ids:
-            for item in res:
-                if id == item[id_name]:
-                    res_sorted.append(item)
-                    break
-        return res_sorted
+        return sorted(res, key=lambda obj: ids.index(obj[id_name]))
 
     @classmethod
     def before_commit(cls, session: SignallingSession):
