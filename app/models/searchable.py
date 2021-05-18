@@ -2,25 +2,7 @@ from flask_sqlalchemy import SignallingSession
 from typing import List
 
 from . import db
-from .orms.base import Base
 from ..search import elasticsearch
-
-
-def query_index(index: str, query: str) -> List[int]:
-    search = elasticsearch.search(index=index, body={'query': {'multi_match': {'query': query, 'fields': ['*']}}})
-    ids = [int(hit['_id']) for hit in search['hits']['hits']]
-    return ids
-
-
-def add_to_index(index: str, model: Base):
-    payload = {}
-    for field in model.__searchable__:
-        payload[field] = getattr(model, field)
-    elasticsearch.index(index=index, id=getattr(model, f'{index[:-1]}_id'), body=payload)
-
-
-def remove_from_index(index: str, model: Base):
-    elasticsearch.delete(index=index, id=getattr(model, f'{index[:-1]}_id'))
 
 
 class Searchable(db.Model):
@@ -60,6 +42,23 @@ class Searchable(db.Model):
     def reindex(cls):
         for obj in cls.query:
             add_to_index(obj.__tablename__, obj)
+
+
+def query_index(index: str, query: str) -> List[int]:
+    search = elasticsearch.search(index=index, body={'query': {'multi_match': {'query': query, 'fields': ['*']}}})
+    ids = [int(hit['_id']) for hit in search['hits']['hits']]
+    return ids
+
+
+def add_to_index(index: str, model: Searchable):
+    payload = {}
+    for field in model.__searchable__:
+        payload[field] = getattr(model, field)
+    elasticsearch.index(index=index, id=getattr(model, f'{index[:-1]}_id'), body=payload)
+
+
+def remove_from_index(index: str, model: Searchable):
+    elasticsearch.delete(index=index, id=getattr(model, f'{index[:-1]}_id'))
 
 
 db.event.listen(db.session, 'before_commit', Searchable.before_commit)
