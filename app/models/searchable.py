@@ -1,25 +1,26 @@
-from . import db
+from flask_sqlalchemy import SignallingSession
+from typing import List
 
+from . import db
+from .orms.base import Base
 from ..search import elasticsearch
 
 
-def query_index(index, fields, query):
-    search = elasticsearch.search(index=index, doc_type=index,
-                                  body={'query': {'bool': {'should': [{'wildcard': {f: f'*{query}*'}}
-                                                                      for f in fields]}}})
+def query_index(index: str, query: str) -> List[int]:
+    search = elasticsearch.search(index=index, body={'query': {'multi_match': {'query': query, 'fields': ['*']}}})
     ids = [int(hit['_id']) for hit in search['hits']['hits']]
     return ids
 
 
-def add_to_index(index, model):
+def add_to_index(index: str, model: Base):
     payload = {}
     for field in model.__searchable__:
         payload[field] = getattr(model, field)
-    elasticsearch.index(index=index, doc_type=index, id=getattr(model, f'{index[:-1]}_id'), body=payload)
+    elasticsearch.index(index=index, id=getattr(model, f'{index[:-1]}_id'), body=payload)
 
 
-def remove_from_index(index, model):
-    elasticsearch.delete(index=index, doc_type=index, id=getattr(model, f'{index[:-1]}_id'))
+def remove_from_index(index: str, model: Base):
+    elasticsearch.delete(index=index, id=getattr(model, f'{index[:-1]}_id'))
 
 
 class Searchable(db.Model):
@@ -27,14 +28,21 @@ class Searchable(db.Model):
     __searchable__ = []
 
     @classmethod
-    def search(cls, query):
-        ids = query_index(cls.__tablename__, cls.__searchable__, query)
+    def search(cls, query: str) -> List[dict]:
+        ids = query_index(cls.__tablename__, query)
         id_name = cls.get_id_name()
         id_column = getattr(cls, id_name)
-        return [cls.orm2dict(obj) for obj in cls.query.filter(id_column.in_(ids)).order_by(id_column)]
+        res = [cls.orm2dict(obj) for obj in cls.query.filter(id_column.in_(ids)).all()]
+        res_sorted = []
+        for id in ids:
+            for item in res:
+                if id == item[id_name]:
+                    res_sorted.append(item)
+                    break
+        return res_sorted
 
     @classmethod
-    def before_commit(cls, session):
+    def before_commit(cls, session: SignallingSession):
         session._changes = {
             'add': list(session.new),
             'update': list(session.dirty),
@@ -42,7 +50,7 @@ class Searchable(db.Model):
         }
 
     @classmethod
-    def after_commit(cls, session):
+    def after_commit(cls, session: SignallingSession):
         for obj in session._changes['add']:
             if isinstance(obj, Searchable):
                 add_to_index(obj.__tablename__, obj)
