@@ -20,7 +20,7 @@ class Environment:
     REDIS_URL = environ.get('REDIS_URL', 'redis://127.0.0.1:6379')
     MAIL_USERNAME = environ['MAIL_USERNAME']
     MAIL_PASSWORD = environ['MAIL_PASSWORD']
-    ELASTICSEARCH_URL = environ['ELASTICSEARCH_URL']
+    ELASTICSEARCH_URL = environ.get('ELASTICSEARCH_URL', 'elasticsearch://127.0.0.1:9200')
 
 
 class Config:
