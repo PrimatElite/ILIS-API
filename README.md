@@ -45,9 +45,14 @@ It needs to set some environment variables for the correct server working.
      export DB_NAME=<DB_NAME>
      ```
 * It needs to set variable for connection with Redis:
-  1. `REDIS_URL` - URL. By default `redis://localhost:6379`.
+  1. `REDIS_URL` - URL. By default `redis://127.0.0.1:6379`.
      ```bash
      export REDIS_URL=<REDIS_URL>
+     ```
+* It needs to set variable for connection with Elasticsearch:
+  1. `ELASTICSEARCH_URL` - URL. By default `elasticsearch://127.0.0.1:9200`.
+     ```bash
+     export ELASTICSEARCH_URL=<ELASTICSEARCH_URL>
      ```
 * Some variables about server address:
   1. `SCHEME` - `http` or `https`
@@ -118,6 +123,10 @@ flask db upgrade
   ```bash
   celery --app app.celery.celery worker --loglevel=INFO
   ```
+* Elasticsearch
+  ```bash
+  docker run -d -p 9200:9200 -e "discovery.type=single-node" --name <elasticsearch_container_name> elasticsearch:7.10.1
+  ```
 
 ## Server running
 
@@ -150,6 +159,7 @@ It needs to have some files with environment variables to build and run docker c
   REDIS_URL
   MAIL_USERNAME
   MAIL_PASSWORD
+  ELASTICSEARCH_URL
   ```
   and `WORKERS` - number of workers for gunicorn starting.
 

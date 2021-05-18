@@ -4,7 +4,7 @@ from flask_migrate import Migrate, MigrateCommand
 from flask_script import Manager
 
 from app import init_app
-from app.models import db
+from app.models import db, Items
 
 
 app = init_app()
@@ -26,6 +26,11 @@ def after_request(response: Response) -> Response:
                          f'Response status: {response.status}\n'
                          f'Response data: {response.get_data()}')
     return response
+
+
+@app.before_first_request
+def before_first_request():
+    Items.reindex()
 
 
 @app.cli.command()

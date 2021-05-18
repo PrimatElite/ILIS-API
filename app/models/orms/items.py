@@ -7,10 +7,12 @@ from .base import Base
 from .requests import Requests
 from ..db import seq
 from ...cache import cache
+from ...models.searchable import Searchable
 
 
-class Items(Base):
+class Items(Base, Searchable):
     __tablename__ = 'items'
+    __searchable__ = ['name_ru', 'name_en', 'desc_ru', 'desc_en']
 
     item_id = Column(Integer, seq, primary_key=True)
     storage_id = Column(Integer, nullable=False)

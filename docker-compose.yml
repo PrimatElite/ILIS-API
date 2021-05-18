@@ -47,6 +47,15 @@ services:
     depends_on:
       - redis
 
+  elastic:
+    image: elasticsearch:7.10.1
+    restart: unless-stopped
+    container_name: ilis_elastic
+    environment:
+      - discovery.type=single-node
+    networks:
+      - ilis
+
 networks:
   ilis:
     external: false

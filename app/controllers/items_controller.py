@@ -1,7 +1,6 @@
 from collections import OrderedDict
 from flask_restplus import marshal, Resource
 from http import HTTPStatus
-from sqlalchemy import or_
 
 from ..models import Items, Storages, Users
 from ..utils.auth import check_admin, get_user_from_request, token_required
@@ -209,10 +208,7 @@ class ItemsSearch(Resource):
     def get(self):
         """Search items by name and description"""
         args = ItemsModels.search_items.parse_args()
-        content = args.content
-        like_content = f'%{content}%'
-        filters = [column.like(like_content) for column in [Items.name_ru, Items.name_en, Items.desc_ru, Items.desc_en]]
-        res_search = [Items.orm2dict(item) for item in Items.query.filter(or_(*filters)).order_by(Items.item_id).all()]
+        res_search = Items.search(args['query'])
         res = []
         for item in res_search:
             storage = Storages.get_storage_by_id(item['storage_id'])

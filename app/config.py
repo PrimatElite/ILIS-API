@@ -20,6 +20,7 @@ class Environment:
     REDIS_URL = environ.get('REDIS_URL', 'redis://127.0.0.1:6379')
     MAIL_USERNAME = environ['MAIL_USERNAME']
     MAIL_PASSWORD = environ['MAIL_PASSWORD']
+    ELASTICSEARCH_URL = environ.get('ELASTICSEARCH_URL', 'elasticsearch://127.0.0.1:9200')
 
 
 class Config:
@@ -48,6 +49,8 @@ class Config:
     SECRET_KEY = Environment.SECRET_KEY
 
     REDIS_URL = Environment.REDIS_URL
+
+    ELASTICSEARCH_URL = Environment.ELASTICSEARCH_URL
 
     CELERY_BROKER_URL = REDIS_URL
     CELERY_IMPORTS = ['app.tasks']
