@@ -1,9 +1,8 @@
 from fastapi import Depends, HTTPException, Path, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 from fastapi.routing import APIRouter
 from sqlalchemy.orm import Session
 from typing import List
-from pydantic import parse_obj_as
 
 from .. import schemas
 from ..dependencies import get_admin, get_current_user, get_db
@@ -86,7 +85,8 @@ def get_requests_me(user: Users = Depends(get_current_user)):
     if len(exclude.keys()) == 0:
         return requests
     else:
-        return JSONResponse(schemas.RequestMeList.from_orm(requests).json(exclude={'__root__': exclude}))
+        return Response(schemas.RequestMeList.from_orm(requests).json(exclude={'__root__': exclude}),
+                        media_type='application/json')
 
 
 @router.post(
@@ -166,7 +166,8 @@ def get_requests_me_by_item(
     if len(exclude.keys()) == 0:
         return requests
     else:
-        return JSONResponse(schemas.RequestItemList.from_orm(requests).json(exclude={'__root__': exclude}))
+        return Response(schemas.RequestItemList.from_orm(requests).json(exclude={'__root__': exclude}),
+                        media_type='application/json')
 
 
 @router.get(
@@ -195,7 +196,8 @@ def get_request_me_by_item_by_id(
     if request.is_in_lending:
         return request
     else:
-        return JSONResponse(schemas.RequestItem.from_orm(request).json(exclude={'requester': {'email', 'phone'}}))
+        return Response(schemas.RequestItem.from_orm(request).json(exclude={'requester': {'email', 'phone'}}),
+                        media_type='application/json')
 
 
 @router.get(
@@ -220,7 +222,8 @@ def get_request_me_by_id(
     if request.is_in_lending:
         return request
     else:
-        return JSONResponse(schemas.RequestMe.from_orm(request).json(exclude={'item': {'owner': {'email', 'phone'}}}))
+        return Response(schemas.RequestMe.from_orm(request).json(exclude={'item': {'owner': {'email', 'phone'}}}),
+                        media_type='application/json')
 
 
 @router.delete(

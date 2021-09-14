@@ -48,7 +48,7 @@ def get_token(
 
     token_response, user_info = None, None
     # try:
-    if grant_type.value == 'authorization_code':
+    if grant_type == schemas.AuthGrantType.authorization_code:
         token_response, user_info = service.get_access_token(code, redirect_uri)
     else:
         token_response, user_info = service.get_refresh_token(refresh_token)

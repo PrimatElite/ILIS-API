@@ -2,22 +2,22 @@ import os
 
 from dotenv import find_dotenv, load_dotenv
 from os import environ
-
-from .utils import str2bool
+from pydantic import parse_raw_as
+from typing import List
 
 
 load_dotenv(find_dotenv())
 
 
 class Environment:
-    SCHEME = environ.get('SCHEME', 'http')  # TODO
+    SCHEME = environ.get('SCHEME', 'http')
     HOST = environ.get('HOST', '127.0.0.1:5000')
     DB_USER = environ['DB_USER']
     DB_PASSWD = environ['DB_PASSWD']
     DB_HOST = environ['DB_HOST']
     DB_PORT = environ['DB_PORT']
     DB_NAME = environ['DB_NAME']
-    LOG_ERRORS = str2bool(environ.get('LOG_ERRORS', 'False'))
+    LOG_ERRORS = parse_raw_as(bool, environ.get('LOG_ERRORS', 'false'))
     GOOGLE_CLIENT_SECRET = environ['GOOGLE_CLIENT_SECRET']
     VK_CLIENT_SECRET = environ['VK_CLIENT_SECRET']
     SECRET_KEY = environ['SECRET_KEY']
@@ -25,24 +25,19 @@ class Environment:
     MAIL_USERNAME = environ['MAIL_USERNAME']
     MAIL_PASSWORD = environ['MAIL_PASSWORD']
     ELASTICSEARCH_URL = environ.get('ELASTICSEARCH_URL', 'elasticsearch://127.0.0.1:9200')
+    CORS_ORIGINS = parse_raw_as(List[str], environ.get('CORS_ORIGINS', '[]'))
 
 
 class Config:
-    ROOT = os.path.abspath(os.path.dirname(__file__))
-    DEBUG = False
     SQLALCHEMY_DATABASE_URI = f'postgresql://{Environment.DB_USER}:{Environment.DB_PASSWD}@' \
                               f'{Environment.DB_HOST}:{Environment.DB_PORT}/{Environment.DB_NAME}'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False  # TODO
-    SWAGGER_UI_REQUEST_DURATION = True
-    ERROR_404_HELP = False  # TODO
-    CORS_SUPPORTS_CREDENTIALS = True  # TODO
+    CORS_ORIGINS = Environment.CORS_ORIGINS
 
     LOG_ERRORS = Environment.LOG_ERRORS
 
     HOST = f'{Environment.SCHEME}://{Environment.HOST}'
 
-    URL_PREFIX = '/api'  # TODO
-    DOC_URL = '/swagger'  # TODO
+    URL_PREFIX = '/api'
 
     GOOGLE_CLIENT_ID = '674406560132-d8etms30a82chl3qb72o0ard0auha3b7.apps.googleusercontent.com'
     GOOGLE_CLIENT_SECRET = Environment.GOOGLE_CLIENT_SECRET
@@ -50,7 +45,7 @@ class Config:
     VK_CLIENT_ID = '7783375'
     VK_CLIENT_SECRET = Environment.VK_CLIENT_SECRET
 
-    SECRET_KEY = Environment.SECRET_KEY  # TODO
+    SECRET_KEY = Environment.SECRET_KEY
 
     REDIS_URL = Environment.REDIS_URL
 
