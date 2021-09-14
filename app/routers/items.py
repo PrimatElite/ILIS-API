@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from .. import schemas
-from ..dependencies import get_admin, get_current_user, get_db
+from ..dependencies import get_admin, get_current_user, get_db, get_trimmed_query
 from ..models import Items, Storages, Users
 
 
@@ -187,7 +187,7 @@ def get_items_by_storage(
     responses={200: {'description': 'Success'}}
 )
 def search_items(
-        query: str = Query(..., description='The required items search query'),
+        query: str = Depends(get_trimmed_query('query', ..., description='The required items search query')),
         db: Session = Depends(get_db)
 ):
     """Search items by name and description"""
