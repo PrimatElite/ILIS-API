@@ -1,4 +1,4 @@
-FROM python:3.6.6
+FROM python:3.8
 
 WORKDIR /usr/src/app
 
@@ -7,7 +7,7 @@ RUN pip install -r requirements.txt
 
 COPY app/ ./app/
 
-COPY app_main.py ./app_main.py
+COPY main.py ./main.py
 
 COPY startup.sh ./startup.sh
 RUN chmod 777 ./startup.sh && \

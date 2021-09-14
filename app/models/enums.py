@@ -1,21 +1,21 @@
 from enum import Enum
 
 
-class EnumUserRole(Enum):
-    ADMIN = 1
-    USER = 2
+class EnumUserRole(str, Enum):
+    ADMIN = 'ADMIN'
+    USER = 'USER'
 
 
-class EnumLoginService(Enum):
-    GOOGLE = 1
-    VK = 2
+class EnumLoginService(str, Enum):
+    GOOGLE = 'GOOGLE'
+    VK = 'VK'
 
 
-class EnumRequestStatus(Enum):
-    APPLIED = 1
-    BOOKED = 2
-    CANCELED = 3
-    COMPLETED = 4
-    DELAYED = 5
-    DENIED = 6
-    LENT = 7
+class EnumRequestStatus(str, Enum):
+    APPLIED = 'APPLIED'
+    BOOKED = 'BOOKED'
+    CANCELED = 'CANCELED'
+    COMPLETED = 'COMPLETED'
+    DELAYED = 'DELAYED'
+    DENIED = 'DENIED'
+    LENT = 'LENT'

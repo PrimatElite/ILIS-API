@@ -1,12 +1,16 @@
 import os
 
+from dotenv import find_dotenv, load_dotenv
 from os import environ
 
 from .utils import str2bool
 
 
+load_dotenv(find_dotenv())
+
+
 class Environment:
-    SCHEME = environ.get('SCHEME', 'http')
+    SCHEME = environ.get('SCHEME', 'http')  # TODO
     HOST = environ.get('HOST', '127.0.0.1:5000')
     DB_USER = environ['DB_USER']
     DB_PASSWD = environ['DB_PASSWD']
@@ -28,17 +32,17 @@ class Config:
     DEBUG = False
     SQLALCHEMY_DATABASE_URI = f'postgresql://{Environment.DB_USER}:{Environment.DB_PASSWD}@' \
                               f'{Environment.DB_HOST}:{Environment.DB_PORT}/{Environment.DB_NAME}'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_TRACK_MODIFICATIONS = False  # TODO
     SWAGGER_UI_REQUEST_DURATION = True
-    ERROR_404_HELP = False
-    CORS_SUPPORTS_CREDENTIALS = True
+    ERROR_404_HELP = False  # TODO
+    CORS_SUPPORTS_CREDENTIALS = True  # TODO
 
     LOG_ERRORS = Environment.LOG_ERRORS
 
     HOST = f'{Environment.SCHEME}://{Environment.HOST}'
 
-    URL_PREFIX = '/api'
-    DOC_URL = '/swagger'
+    URL_PREFIX = '/api'  # TODO
+    DOC_URL = '/swagger'  # TODO
 
     GOOGLE_CLIENT_ID = '674406560132-d8etms30a82chl3qb72o0ard0auha3b7.apps.googleusercontent.com'
     GOOGLE_CLIENT_SECRET = Environment.GOOGLE_CLIENT_SECRET
@@ -46,7 +50,7 @@ class Config:
     VK_CLIENT_ID = '7783375'
     VK_CLIENT_SECRET = Environment.VK_CLIENT_SECRET
 
-    SECRET_KEY = Environment.SECRET_KEY
+    SECRET_KEY = Environment.SECRET_KEY  # TODO
 
     REDIS_URL = Environment.REDIS_URL
 

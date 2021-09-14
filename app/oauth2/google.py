@@ -1,72 +1,71 @@
 import requests
 
-from flask import current_app
-from flask_restplus import Namespace
-from http import HTTPStatus
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
 from typing import Tuple
 
 from .base import BaseOAuth2, TokenResponse
-from ..models import Users
-from ..models.enums import EnumLoginService
+from ..models import EnumLoginService, Users
+from ..config import Config
 
 
 class GoogleOAuth2(BaseOAuth2):
-    GOOGLE_SCOPES = [
+    SCOPES = [
         'https://www.googleapis.com/auth/userinfo.profile',
         'https://www.googleapis.com/auth/userinfo.email'
     ]
-    GOOGLE_CODE_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
-    GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
-    GOOGLE_INFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo?access_token='
+    CODE_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
+    TOKEN_URL = 'https://oauth2.googleapis.com/token'
+    INFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo?access_token='
 
     @classmethod
     def get_code_url(cls, redirect_uri: str) -> str:
         query_params = '&'.join([
-            f'client_id={current_app.config["GOOGLE_CLIENT_ID"]}',
+            f'client_id={Config.GOOGLE_CLIENT_ID}',
             f'redirect_uri={redirect_uri}',
             'access_type=offline',
             'include_granted_scopes=true',
             'response_type=code',
-            f'scope={" ".join(cls.GOOGLE_SCOPES)}',
+            f'scope={" ".join(cls.SCOPES)}',
             'select_account=true'
         ])
-        return f'{cls.GOOGLE_CODE_URL}?{query_params}'
+        return f'{cls.CODE_URL}?{query_params}'
 
     @classmethod
-    def get_access_token(cls, api: Namespace, code: str, redirect_uri: str) -> Tuple[TokenResponse, dict]:
+    def get_access_token(cls, code: str, redirect_uri: str) -> Tuple[TokenResponse, dict]:
         query_params = '&'.join([
-            f'client_id={current_app.config["GOOGLE_CLIENT_ID"]}',
-            f'client_secret={current_app.config["GOOGLE_CLIENT_SECRET"]}',
+            f'client_id={Config.GOOGLE_CLIENT_ID}',
+            f'client_secret={Config.GOOGLE_CLIENT_SECRET}',
             f'code={code}',
             'grant_type=authorization_code',
             f'redirect_uri={redirect_uri}'
         ])
-        response = requests.post(f'{cls.GOOGLE_TOKEN_URL}?{query_params}')
-        if response.status_code != HTTPStatus.OK:
-            api.abort(response.status_code)
+        response = requests.post(f'{cls.TOKEN_URL}?{query_params}')
+        if response.status_code != status.HTTP_200_OK:
+            raise HTTPException(response.status_code)
         response_data = response.json()
         user_info = cls.get_info(response_data['access_token'])
         return TokenResponse(response_data['access_token'], response_data.get('refresh_token'),
                              response_data['expires_in']), user_info
 
     @classmethod
-    def get_refresh_token(cls, api: Namespace, refresh_token: str) -> Tuple[TokenResponse, dict]:
+    def get_refresh_token(cls, refresh_token: str) -> Tuple[TokenResponse, dict]:
         query_params = '&'.join([
-            f'client_id={current_app.config["GOOGLE_CLIENT_ID"]}',
-            f'client_secret={current_app.config["GOOGLE_CLIENT_SECRET"]}',
+            f'client_id={Config.GOOGLE_CLIENT_ID}',
+            f'client_secret={Config.GOOGLE_CLIENT_SECRET}',
             f'refresh_token={refresh_token}',
             'grant_type=authorization_code'
         ])
-        response = requests.post(f'{cls.GOOGLE_TOKEN_URL}?{query_params}')
-        if response.status_code != HTTPStatus.OK:
-            api.abort(response.status_code)
+        response = requests.post(f'{cls.TOKEN_URL}?{query_params}')
+        if response.status_code != status.HTTP_200_OK:
+            raise HTTPException(response.status_code)
         response_data = response.json()
         user_info = cls.get_info(response_data['access_token'])
         return TokenResponse(response_data['access_token'], refresh_token, response_data['expires_in']), user_info
 
     @classmethod
     def get_info(cls, access_token: str) -> dict:
-        response = requests.get(cls.GOOGLE_INFO_URL + access_token)
+        response = requests.get(cls.INFO_URL + access_token)
         return response.json()
 
     @classmethod
@@ -90,18 +89,18 @@ class GoogleOAuth2(BaseOAuth2):
         return data
 
     @classmethod
-    def validate_token(cls, api: Namespace, access_token: str) -> dict:
-        response = requests.get(cls.GOOGLE_INFO_URL + access_token)
-        if response.status_code != HTTPStatus.OK:
-            api.abort(response.status_code, response.text)
+    def validate_token(cls, access_token: str) -> dict:
+        response = requests.get(cls.INFO_URL + access_token)
+        if response.status_code != status.HTTP_200_OK:
+            raise HTTPException(response.status_code, response.text)
         response_data = response.json()
         if 'error' in response_data:
-            api.abort(HTTPStatus.UNAUTHORIZED, 'Invalid token supplied')
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Invalid token supplied')
         return response_data
 
     @classmethod
-    def get_user_by_id(cls, api: Namespace, login_id: str) -> dict:
-        user = Users.get_user_by_login(login_id, EnumLoginService.GOOGLE.name)
+    def get_user_by_id(cls, login_id: str, db: Session) -> Users:
+        user = Users.get_user_by_login(login_id, EnumLoginService.GOOGLE.name, db)
         if user is not None:
             return user
-        api.abort(HTTPStatus.NOT_FOUND, 'User not found')
+        raise HTTPException(status.HTTP_404_NOT_FOUND, 'User not found')

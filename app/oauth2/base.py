@@ -1,22 +1,29 @@
 from collections import namedtuple
-from flask_restplus import Namespace
+from sqlalchemy.orm import Session
 from typing import Tuple
+
+from ..models import Users
 
 
 TokenResponse = namedtuple('TokenResponse', ['access_token', 'refresh_token', 'expires_in'])
 
 
 class BaseOAuth2:
+    SCOPES = []
+    CODE_URL = ''
+    TOKEN_URL = ''
+    INFO_URL = ''
+
     @classmethod
     def get_code_url(cls, redirect_uri: str) -> str:
         raise NotImplementedError
 
     @classmethod
-    def get_access_token(cls, api: Namespace, code: str, redirect_uri: str) -> Tuple[TokenResponse, dict]:
+    def get_access_token(cls, code: str, redirect_uri: str) -> Tuple[TokenResponse, dict]:
         raise NotImplementedError
 
     @classmethod
-    def get_refresh_token(cls, api: Namespace, refresh_token: str) -> Tuple[TokenResponse, dict]:
+    def get_refresh_token(cls, refresh_token: str) -> Tuple[TokenResponse, dict]:
         raise NotImplementedError
 
     @classmethod
@@ -32,9 +39,9 @@ class BaseOAuth2:
         raise NotImplementedError
 
     @classmethod
-    def validate_token(cls, api: Namespace, access_token: str) -> dict:
+    def validate_token(cls, access_token: str) -> dict:
         raise NotImplementedError
 
     @classmethod
-    def get_user_by_id(cls, api: Namespace, login_id: str) -> dict:
+    def get_user_by_id(cls, login_id: str, db: Session) -> Users:
         raise NotImplementedError

@@ -1,12 +1,12 @@
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship, Session
 from typing import List, Optional
 
-from .base import Base
+from .base import Base, DictStrAny
 # TODO import Images
 # from .images import Images
-from .requests import Requests
-from ..db import seq
-from ...cache import cache
+from .users import Users
+from ...exceptions import StorageNotFoundError
 from ...models.searchable import Searchable
 
 
@@ -14,91 +14,70 @@ class Items(Base, Searchable):
     __tablename__ = 'items'
     __searchable__ = ['name_ru', 'name_en', 'desc_ru', 'desc_en']
 
-    item_id = Column(Integer, seq, primary_key=True)
-    storage_id = Column(Integer, nullable=False)
+    item_id = Column(Integer, Base.seq, primary_key=True, server_default=Base.seq.next_value())
+    storage_id = Column(Integer, ForeignKey('storages.storage_id'), nullable=False)
     name_ru = Column(String(length=127), nullable=False)
     name_en = Column(String(length=127), nullable=False)
     desc_ru = Column(String(length=511), nullable=False)
     desc_en = Column(String(length=511), nullable=False)
     count = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=Base.now)
-    updated_at = Column(DateTime, default=Base.now, onupdate=Base.now)
+    created_at = Column(DateTime, default=Base.now, nullable=False)
+    updated_at = Column(DateTime, default=Base.now, onupdate=Base.now, nullable=False)
 
-    additional_fields = {
-        'remaining_count': lambda item_id: Items.get_remaining_count(Items.get_item_by_id(item_id))
-    }
+    storage = relationship('Storages', back_populates='items')
+    requests = relationship('Requests', back_populates='item', cascade='all, delete')
 
-    fields_to_update = ['storage_id', 'name_ru', 'name_en', 'desc_ru', 'desc_en', 'count']
-    simple_fields_to_update = ['name_ru', 'name_en', 'desc_ru', 'desc_en']
+    fields_to_update = [storage_id, name_ru, name_en, desc_ru, desc_en, count]
+    simple_fields_to_update = [name_ru, name_en, desc_ru, desc_en]
 
-    # TODO add image deleter link in item
-    delete_relation_funcs = [Requests.delete_requests_by_item]
+    @property
+    def owner(self) -> Users:
+        return self.storage.user
 
-    @classmethod
-    @cache.cache_list('get_items', field='item_id')
-    def get_items(cls) -> List[dict]:
-        return [cls.orm2dict(item) for item in cls.query.order_by(cls.item_id).all()]
-
-    @classmethod
-    @cache.cache_list('get_items_by_storage', field='item_id')
-    def get_items_by_storage(cls, storage_id: int) -> List[dict]:
-        return [cls.orm2dict(item) for item in cls.query.filter_by(storage_id=storage_id).order_by(cls.item_id).all()]
+    @property
+    def remaining_count(self) -> int:
+        requests_filter = filter(lambda r: r.is_in_lending, self.requests)
+        lending_count = sum(map(lambda r: r.count, requests_filter))
+        return self.count - lending_count
 
     @classmethod
-    @cache.cache_element('get_item_by_id')
-    def get_item_by_id(cls, item_id: int) -> Optional[dict]:
-        return cls.orm2dict(cls.query.filter_by(item_id=item_id).first())
+    def get_item_by_id(cls, item_id: int, db: Session) -> Optional['Items']:
+        return db.query(cls).filter_by(item_id=item_id).first()
 
     get_obj_by_id = get_item_by_id
 
     @classmethod
-    def get_remaining_count(cls, item_dict: dict) -> int:
-        requests_filter = filter(lambda r: r['is_in_lending'], Requests.get_requests_by_item(item_dict['item_id']))
-        lending_count = sum(map(lambda r: r['count'], requests_filter))
-        return item_dict['count'] - lending_count
+    def get_items(cls, db: Session) -> List['Items']:
+        return db.query(cls).order_by(cls.item_id).all()
 
     @classmethod
-    def create(cls, data: dict) -> Optional[dict]:
+    def get_items_by_storage(cls, storage_id: int, db: Session) -> List['Items']:
+        return db.query(cls).filter_by(storage_id=storage_id).order_by(cls.item_id).all()
+
+    @classmethod
+    def get_remaining_count(cls, item: 'Items') -> int:
+        requests_filter = filter(lambda r: r.is_in_lending, item.requests)
+        lending_count = sum(map(lambda r: r.count, requests_filter))
+        return item.count - lending_count
+
+    @classmethod
+    def _check_create(cls, data: DictStrAny, db: Session):
         from .storages import Storages
 
-        storage_dict = Storages.get_storage_by_id(data['storage_id'])
-        if storage_dict is not None:
-            item = cls.dict2cls(data, False).add()
-            item_dict = cls.orm2dict(item)
-            cls.after_create(item_dict)
-            return item_dict
-        return None
+        storage = Storages.get_storage_by_id(data['storage_id'], db)
+        if storage is None:
+            raise StorageNotFoundError(data['storage_id'])
 
-    @classmethod
-    def update(cls, data: dict) -> Optional[dict]:
+    def _update_complicated_fields(self, data: DictStrAny, db: Session) -> 'Items':
         from .storages import Storages
 
-        item_dict = cls.get_item_by_id(data['item_id'])
-        if item_dict is not None:
-            if not cls._need_to_update(data):
-                return item_dict
-            item = cls.dict2cls(item_dict)._update_fields(data, cls.simple_fields_to_update)
-            if 'storage_id' in data:
-                start_storage = Storages.get_storage_by_id(item_dict['storage_id'])
-                dest_storage = Storages.get_storage_by_id(data['storage_id'])
-                if dest_storage is not None and start_storage['user_id'] == dest_storage['user_id']:
-                    item = item._update_fields(data, ['storage_id'])
-            if 'count' in data and data['count'] >= item.count - cls.get_remaining_count(item_dict):
-                item = item._update_fields(data, ['count'])
-            item = item.add()
-            item_dict = cls.orm2dict(item)
-            cls.after_update(item_dict)
-        return item_dict
+        if data['storage_id'] is not None:
+            dest_storage = Storages.get_storage_by_id(data['storage_id'], db)
+            if dest_storage is not None and self.storage.user_id == dest_storage.user_id:
+                self.storage_id = data['storage_id']
+        if data['count'] is not None and data['count'] >= self.count - self.remaining_count:
+            self.count = data['count']
+        return self
 
-    @classmethod
-    def can_delete(cls, item_dict: dict) -> bool:
-        return all(Requests.can_delete(request_dict)
-                   for request_dict in Requests.get_requests_by_item(item_dict['item_id']))
-
-    @classmethod
-    def delete_items_by_storage(cls, storage_id: int):
-        for item_dict in cls.get_items_by_storage(storage_id):
-            cls._delete(item_dict)
-
-
-Items.__cached__ = [Items.get_items, Items.get_items_by_storage, Items.get_item_by_id]
+    def can_delete(self) -> bool:
+        return all(request.can_delete() for request in self.requests)

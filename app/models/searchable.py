@@ -1,24 +1,28 @@
-from flask_sqlalchemy import SignallingSession
+from sqlalchemy import case, event
+from sqlalchemy.orm import Session
 from typing import List
 
-from . import db
+from .db import DeclarativeBase, SessionLocal
+from .orms.base import Base
 from ..search import elasticsearch
 
 
-class Searchable(db.Model):
+class Searchable(DeclarativeBase):
     __abstract__ = True
     __searchable__ = []
 
     @classmethod
-    def search(cls, query: str) -> List[dict]:
+    def search(cls, query: str, db: Session) -> List[Base]:
         ids = query_index(cls.__tablename__, query)
-        id_name = cls.get_id_name()
-        id_column = getattr(cls, id_name)
-        res = [cls.orm2dict(obj) for obj in cls.query.filter(id_column.in_(ids)).all()]
-        return sorted(res, key=lambda obj: ids.index(obj[id_name]))
+        if len(ids) > 0:
+            id_name = cls.get_id_name()
+            id_column = getattr(cls, id_name)
+            when = [(id_, i) for i, id_ in enumerate(ids)]
+            return db.query(cls).filter(id_column.in_(ids)).order_by(case(when, value=id_column)).all()
+        return []
 
     @classmethod
-    def before_commit(cls, session: SignallingSession):
+    def before_commit(cls, session: Session):
         session._changes = {
             'add': list(session.new),
             'update': list(session.dirty),
@@ -26,7 +30,7 @@ class Searchable(db.Model):
         }
 
     @classmethod
-    def after_commit(cls, session: SignallingSession):
+    def after_commit(cls, session: Session):
         for obj in session._changes['add']:
             if isinstance(obj, Searchable):
                 add_to_index(obj.__tablename__, obj)
@@ -39,8 +43,8 @@ class Searchable(db.Model):
         session._changes = None
 
     @classmethod
-    def reindex(cls):
-        for obj in cls.query:
+    def reindex(cls, db: Session):
+        for obj in db.query(cls):
             add_to_index(obj.__tablename__, obj)
 
 
@@ -61,5 +65,5 @@ def remove_from_index(index: str, model: Searchable):
     elasticsearch.delete(index=index, id=getattr(model, f'{index[:-1]}_id'))
 
 
-db.event.listen(db.session, 'before_commit', Searchable.before_commit)
-db.event.listen(db.session, 'after_commit', Searchable.after_commit)
+event.listen(SessionLocal, 'before_commit', Searchable.before_commit)
+event.listen(SessionLocal, 'after_commit', Searchable.after_commit)

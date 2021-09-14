@@ -1,21 +1,30 @@
-from flask import Flask
-from flask_cors import CORS
+from fastapi import FastAPI
 
-from . import admin, cache, celery, controllers, mail, models
+# from . import admin, cache, celery, mail  # TODO
+from . import exceptions, routers, models
 from .config import Config
+from .utils import get_version
 
 
-app = Flask(__name__)
-app.config.from_object(Config)
-
-models.init_app(app)
-mail.init_app(app)
+app = FastAPI(title='ILIS API', description='API for ILIS', version=get_version())
 
 
-def init_app() -> Flask:
-    CORS(app, resources={r'/*': {'origins': '*'}}, supports_credentials=True)
-    cache.init()
-    controllers.init_app(app)
-    admin.init_app(app)
-    celery.init()
+@app.on_event('startup')
+async def startup_event():
+    session = models.SessionLocal()
+    models.Users.init(session)
+    models.Items.reindex(session)
+    session.close()
+
+
+# mail.init_app(app)
+
+
+def init_app() -> FastAPI:
+    # CORS(app, resources={r'/*': {'origins': '*'}}, supports_credentials=True)
+    # cache.init()
+    exceptions.init_app(app)
+    routers.init_app(app)
+    # admin.init_app(app)
+    # celery.init()
     return app

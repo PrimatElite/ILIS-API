@@ -1,19 +1,14 @@
-from contextlib import contextmanager
-from flask_sqlalchemy import SQLAlchemy as SQLAlchemy_
-from sqlalchemy import Sequence
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+from ..config import Config
 
 
-class SQLAlchemy(SQLAlchemy_):
-    @contextmanager
-    def auto_commit(self, throw=True):
-        try:
-            yield
-            self.session.commit()
-        except Exception as e:
-            self.session.rollback()
-            if throw:
-                raise e
+engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
 
 
-db = SQLAlchemy()
-seq = Sequence('ilis_seq')
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+DeclarativeBase = declarative_base()

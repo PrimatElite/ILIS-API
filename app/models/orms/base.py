@@ -1,159 +1,133 @@
-import inspect
-
-from collections import OrderedDict
+from contextlib import contextmanager
 from datetime import datetime, timedelta
-from dateutil import parser
-from enum import Enum
-from typing import List, Optional
+from sqlalchemy import Column, Sequence
+from sqlalchemy.orm import Session
+from typing import Any, Dict, List
 
-from ...cache import cache, is_cache_list
-from ...utils import any_in, datetime2str, validate_iso8601
-from app.models.db import db
+from ..db import DeclarativeBase
+from ...exceptions import DeletionError, ModelNotFoundError
+from ...utils import any_in
 
 
-class Base(db.Model):
+DictStrAny = Dict[str, Any]
+
+
+class Base(DeclarativeBase):
     __abstract__ = True
 
-    serialize_properties = []
+    seq = Sequence('ilis_seq')
+
     additional_fields = {}
 
-    fields_to_update = []
-    simple_fields_to_update = []
-
-    delete_relation_funcs = []
-
-    __cached__ = []
+    fields_to_update: List[Column] = []
+    simple_fields_to_update: List[Column] = []
 
     @classmethod
-    def now(cls) -> datetime:
-        return datetime.utcnow() + timedelta(hours=3)
-
-    @classmethod
-    def get_obj_by_id(cls, obj_id: int) -> dict:
+    def _check_create(cls, data: DictStrAny, db: Session):
         pass
+
+    @classmethod
+    def check_exist(cls, obj_id: int, db: Session) -> 'Base':
+        obj = cls.get_obj_by_id(obj_id, db)
+        if obj is None:
+            raise ModelNotFoundError(f'{cls.__name__[:-1]} {obj_id} not found')
+        return obj
+
+    @classmethod
+    def _create_from_dict(cls, data: DictStrAny) -> 'Base':
+        obj = cls()
+        return obj._update_fields(data, cls.get_columns())
+
+    @classmethod
+    def _need_to_update(cls, data: DictStrAny) -> bool:
+        return any_in([field.name for field in cls.fields_to_update], data)
+
+    @classmethod
+    def create(cls, data: DictStrAny, db: Session) -> 'Base':
+        cls._check_create(data, db)
+        obj = cls._create_from_dict(data)._add(db)
+        obj._after_create()
+        return obj
+
+    @classmethod
+    def delete(cls, obj_id: int, db: Session) -> 'Base':
+        obj = cls.check_exist(obj_id, db)
+        if obj.can_delete():
+            obj._delete(db)
+        else:
+            raise DeletionError(f"{cls.__name__[:-1]} {obj_id} can't be deleted")
+        return obj
+
+    @classmethod
+    def get_columns(cls) -> List[Column]:
+        return list(cls.__table__.columns.values())
 
     @classmethod
     def get_id_name(cls) -> str:
         return cls.__table__.columns.keys()[0]
 
     @classmethod
-    def get_columns_names(cls) -> List[str]:
-        return list(cls.__table__.columns.keys())
+    def get_obj_by_id(cls, obj_id: int, db: Session) -> 'Base':
+        pass
 
     @classmethod
-    def get_additional_fields(cls, obj_id: int, fields: List[str] = None) -> dict:
-        result = OrderedDict([(cls.get_id_name(), obj_id)])
-        if fields is None:
-            fields = cls.additional_fields.keys()
-        for field, func in cls.additional_fields.items():
-            if field in fields:
-                result.update({field: func(obj_id)})
-        return result
+    def init(cls, db: Session):
+        pass
 
     @classmethod
-    def orm2dict(cls, obj: Optional['Base'], fields: List[str] = None) -> Optional[dict]:
-        def dictionate_entity(entity):
-            if isinstance(entity, datetime):
-                return datetime2str(entity)
-            elif isinstance(entity, Enum):
-                return entity.name
-            else:
-                return entity
-
-        if obj is None:
-            return None
-        if fields is None:
-            fields = cls.get_columns_names() + cls.serialize_properties
-        return OrderedDict([(field, dictionate_entity(getattr(obj, field))) for field in fields if hasattr(obj, field)])
+    def now(cls) -> datetime:
+        return datetime.utcnow() + timedelta(hours=3)
 
     @classmethod
-    def dict2cls(cls, data: dict, merge: bool = True) -> 'Base':
-        obj = cls()
-        obj._update_fields(data, cls.get_columns_names())
-        if merge:
-            return db.session.merge(obj)
+    def update(cls, data: DictStrAny, db: Session) -> 'Base':
+        obj = cls.check_exist(data[cls.get_id_name()], db)
+        obj = obj._update_fields(data, cls.simple_fields_to_update)._update_complicated_fields(data, db)._add(db)
+        obj._after_update()
         return obj
 
-    def _update_fields(self, data: dict, fields: list) -> 'Base':
+    def _add(self, db: Session) -> 'Base':
+        with self.auto_commit(db):
+            db.add(self)
+        return self
+
+    def _after_create(self):
+        pass
+
+    def _after_delete(self):
+        pass
+
+    def _after_update(self):
+        pass
+
+    def _delete(self, db: Session):
+        self._delete_self(db)
+        self._after_delete()
+
+    def _delete_self(self, db: Session) -> 'Base':
+        with self.auto_commit(db, False):
+            db.delete(self)
+        return self
+
+    def _update_complicated_fields(self, data: DictStrAny, db: Session) -> 'Base':
+        return self
+
+    def _update_fields(self, data: DictStrAny, fields: List[Column]) -> 'Base':
         for field in fields:
-            if field in data:
-                field_type = self.__table__.columns[field].type.python_type
-                if field_type == datetime:
-                    if validate_iso8601(data[field]):
-                        setattr(self, field, parser.parse(data[field]))
-                elif issubclass(field_type, Enum):
-                    setattr(self, field, field_type[data[field]])
-                else:
-                    setattr(self, field, data[field])
+            if field.name in data and ((data[field.name] is None and field.nullable) or data[field.name] is not None):
+                setattr(self, field.name, data[field.name])
         return self
 
-    @classmethod
-    def _need_to_update(cls, data: dict) -> bool:
-        return any_in(cls.fields_to_update, data)
+    @contextmanager
+    def auto_commit(self, db: Session, refresh: bool = True, throw: bool = True):
+        try:
+            yield
+            db.commit()
+            if refresh:
+                db.refresh(self)
+        except Exception as e:
+            db.rollback()
+            if throw:
+                raise e
 
-    def add(self) -> 'Base':
-        with db.auto_commit():
-            db.session.add(self)
-        return self
-
-    @classmethod
-    def after_create(cls, obj_dict: dict):
-        cls._update_cache(obj_dict)
-
-    @classmethod
-    def after_update(cls, obj_dict: dict):
-        cls._update_cache(obj_dict)
-
-    def delete_self(self) -> 'Base':
-        with db.auto_commit():
-            db.session.delete(self)
-        return self
-
-    @classmethod
-    def _delete_relations(cls, obj_id: int):
-        for delete_func in cls.delete_relation_funcs:
-            delete_func(obj_id)
-
-    @classmethod
-    def after_delete(cls, obj_dict: dict):
-        cls._delete_relations(obj_dict[cls.get_id_name()])
-        cls._delete_cache(obj_dict)
-
-    @classmethod
-    def can_delete(cls, obj_dict: dict) -> bool:
+    def can_delete(self) -> bool:
         return True
-
-    @classmethod
-    def _delete(cls, obj_dict: dict):
-        obj = cls.dict2cls(obj_dict)
-        obj.delete_self()
-        cls.after_delete(obj_dict)
-
-    @classmethod
-    def delete(cls, obj_id: int) -> Optional[bool]:
-        obj_dict = cls.get_obj_by_id(obj_id)
-        if obj_dict is not None:
-            if cls.can_delete(obj_dict):
-                cls._delete(obj_dict)
-                return True
-            return False
-        return None
-
-    @classmethod
-    def _update_cache(cls, obj_dict: dict):
-        for func in cls.__cached__:
-            func_args = list(inspect.signature(func).parameters)
-            args = tuple(obj_dict[func_arg] for func_arg in func_args)
-            value = cache.get_value_from_function(func, *args)
-            value.update_value(obj_dict)
-
-    @classmethod
-    def _delete_cache(cls, obj_dict: dict):
-        for func in cls.__cached__:
-            func_args = list(inspect.signature(func).parameters)
-            args = tuple(obj_dict[func_arg] for func_arg in func_args)
-            value = cache.get_value_from_function(func, *args)
-            if is_cache_list(func):
-                value.delete_element(obj_dict)
-            else:
-                value.delete_value()

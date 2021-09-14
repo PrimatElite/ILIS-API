@@ -1,8 +1,3 @@
-from flask import Flask
-
-from .db import db
+from .db import DeclarativeBase, SessionLocal
+from .enums import EnumLoginService, EnumRequestStatus, EnumUserRole
 from .orms import *
-
-
-def init_app(app: Flask):
-    db.init_app(app)

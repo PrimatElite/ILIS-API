@@ -1,81 +1,57 @@
-from sqlalchemy import Column, Integer, String, Float
-from typing import Union
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Float
+from sqlalchemy.orm import relationship, Session
+from typing import List, Optional
 
-from .base import Base
-from .items import Items
-from ..db import seq
-from ...cache import cache
+from .base import Base, DictStrAny
+from ...exceptions import UserNotFoundError
 from ...utils import all_in
 
 
 class Storages(Base):
     __tablename__ = 'storages'
 
-    storage_id = Column(Integer, seq, primary_key=True)
-    user_id = Column(Integer, nullable=False)
+    storage_id = Column(Integer, Base.seq, primary_key=True, server_default=Base.seq.next_value())
+    user_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
     name = Column(String, nullable=False)
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
     address = Column(String, nullable=False)
+    created_at = Column(DateTime, default=Base.now, nullable=False)
+    updated_at = Column(DateTime, default=Base.now, onupdate=Base.now, nullable=False)
 
-    location_fields_to_update = ['latitude', 'longitude', 'address']
-    simple_fields_to_update = ['name']
-    fields_to_update = simple_fields_to_update + location_fields_to_update
+    user = relationship('Users', back_populates='storages')
+    items = relationship('Items', back_populates='storage', cascade='all, delete')
 
-    delete_relation_funcs = [Items.delete_items_by_storage]
-
-    @classmethod
-    @cache.cache_list('get_storages', field='storage_id')
-    def get_storages(cls):
-        return [cls.orm2dict(storage) for storage in cls.query.order_by(cls.storage_id).all()]
+    _location_fields_to_update: List[Column] = [latitude, longitude, address]
+    simple_fields_to_update = [name]
+    fields_to_update = simple_fields_to_update + _location_fields_to_update
 
     @classmethod
-    @cache.cache_list('get_storages_by_user', field='storage_id')
-    def get_storages_by_user(cls, user_id: int):
-        return [cls.orm2dict(storage)
-                for storage in cls.query.filter_by(user_id=user_id).order_by(cls.storage_id).all()]
-
-    @classmethod
-    @cache.cache_element('get_storage_by_id')
-    def get_storage_by_id(cls, storage_id: int):
-        return cls.orm2dict(cls.query.filter_by(storage_id=storage_id).first())
+    def get_storage_by_id(cls, storage_id: int, db: Session) -> Optional['Storages']:
+        return db.query(cls).filter_by(storage_id=storage_id).first()
 
     get_obj_by_id = get_storage_by_id
 
     @classmethod
-    def create(cls, data: dict) -> Union[dict, None]:
+    def get_storages(cls, db: Session) -> List['Storages']:
+        return db.query(cls).order_by(cls.storage_id).all()
+
+    @classmethod
+    def get_storages_by_user(cls, user_id: int, db: Session) -> List['Storages']:
+        return db.query(cls).filter_by(user_id=user_id).order_by(cls.storage_id).all()
+
+    @classmethod
+    def _check_create(cls, data: DictStrAny, db: Session):
         from .users import Users
 
-        user = Users.get_user_by_id(data['user_id'])
-        if user is not None:
-            storage = cls.dict2cls(data, False).add()
-            storage_dict = cls.orm2dict(storage)
-            cls.after_create(storage_dict)
-            return storage_dict
-        return None
+        user = Users.get_user_by_id(data['user_id'], db)
+        if user is None:
+            raise UserNotFoundError(data['user_id'])
 
-    @classmethod
-    def update(cls, data: dict) -> Union[dict, None]:
-        storage_dict = cls.get_storage_by_id(data['storage_id'])
-        if storage_dict is not None:
-            if not cls._need_to_update(data):
-                return storage_dict
-            storage = cls.dict2cls(storage_dict)._update_fields(data, cls.simple_fields_to_update)
-            if all_in(cls.location_fields_to_update, data):
-                storage._update_fields(data, cls.location_fields_to_update)
-            storage.add()
-            storage_dict = cls.orm2dict(storage)
-            cls.after_update(storage_dict)
-        return storage_dict
+    def _update_complicated_fields(self, data: DictStrAny, db: Session) -> 'Storages':
+        if all_in([field.name for field in self._location_fields_to_update], data):
+            self._update_fields(data, self._location_fields_to_update)
+        return self
 
-    @classmethod
-    def can_delete(cls, storage_dict: dict) -> bool:
-        return all(Items.can_delete(item_dict) for item_dict in Items.get_items_by_storage(storage_dict['storage_id']))
-
-    @classmethod
-    def delete_storages_by_user(cls, user_id: int):
-        for storage_dict in cls.get_storages_by_user(user_id):
-            cls._delete(storage_dict)
-
-
-Storages.__cached__ = [Storages.get_storages, Storages.get_storages_by_user, Storages.get_storage_by_id]
+    def can_delete(self) -> bool:
+        return all(item.can_delete() for item in self.items)
