@@ -4,8 +4,9 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from .. import schemas
+from ..cruds import CRUDStorages, CRUDUsers
 from ..dependencies import get_admin, get_current_user, get_db
-from ..models import Storages, Users
+from ..models import ORMUsers
 
 
 router = APIRouter(prefix='/storages', tags=['storages'])
@@ -23,7 +24,7 @@ router = APIRouter(prefix='/storages', tags=['storages'])
 )
 def get_storages(db: Session = Depends(get_db)):
     """Get all storages"""
-    return Storages.get_storages(db)
+    return CRUDStorages.get_list(db)
 
 
 @router.post(
@@ -43,7 +44,7 @@ def create_storage(
         db: Session = Depends(get_db)
 ):
     """Create new storage"""
-    storage = Storages.create(payload.dict(), db)
+    storage = CRUDStorages.create(db, payload.dict())
     return storage
 
 
@@ -63,7 +64,7 @@ def update_storage(
         db: Session = Depends(get_db)
 ):
     """Update storage"""
-    storage = Storages.update(payload.dict(), db)
+    storage = CRUDStorages.update(db, payload.dict())
     return storage
 
 
@@ -76,7 +77,7 @@ def update_storage(
         404: {'description': 'Not found'}
     }
 )
-def get_storages_me(user: Users = Depends(get_current_user)):
+def get_storages_me(user: ORMUsers = Depends(get_current_user)):
     """Get own storages"""
     storages = user.storages
     return storages
@@ -94,13 +95,13 @@ def get_storages_me(user: Users = Depends(get_current_user)):
 )
 def create_storage_me(
         payload: schemas.StorageCreateMe,
-        user: Users = Depends(get_current_user),
+        user: ORMUsers = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
     """Create new own storage"""
     data = payload.dict()
     data['user_id'] = user.user_id
-    storage = Storages.create(data, db)
+    storage = CRUDStorages.create(db, data)
     return storage
 
 
@@ -116,14 +117,14 @@ def create_storage_me(
 )
 def update_storage_me(
         payload: schemas.StorageUpdateMe,
-        user: Users = Depends(get_current_user),
+        user: ORMUsers = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
     """Update own storage"""
-    storage = Storages.check_exist(payload.storage_id, db)
+    storage = CRUDStorages.check_existence(db, payload.storage_id)
     if storage.user_id != user.user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Storage {payload.storage_id} is not yours')
-    storage = Storages.update(payload.dict(), db)
+    storage = CRUDStorages.update(db, payload.dict())
     return storage
 
 
@@ -139,14 +140,14 @@ def update_storage_me(
 )
 def delete_storage_me_by_id(
         storage_id: int = Path(..., description='The identifier of the storage to delete'),
-        user: Users = Depends(get_current_user),
+        user: ORMUsers = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
     """Delete own storage by id"""
-    storage = Storages.check_exist(storage_id, db)
+    storage = CRUDStorages.check_existence(db, storage_id)
     if storage.user_id != user.user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Storage {storage_id} is not yours')
-    Storages.delete(storage_id, db)
+    CRUDStorages.delete(db, storage_id)
     return ''
 
 
@@ -166,7 +167,7 @@ def get_storages_by_user(
         db: Session = Depends(get_db)
 ):
     """Get storages by user"""
-    user = Users.check_exist(user_id, db)
+    user = CRUDUsers.check_existence(db, user_id)
     storages = user.storages
     return storages
 
@@ -187,5 +188,5 @@ def delete_storage_by_id(
         db: Session = Depends(get_db)
 ):
     """Delete storage by id"""
-    Storages.delete(storage_id, db)
+    CRUDStorages.delete(db, storage_id)
     return ''

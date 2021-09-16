@@ -120,7 +120,7 @@ class ItemCreate(TrimModel):
     name_en: str = Field(..., description='The item name in English', max_length=127)
     desc_ru: str = Field(..., description='The item description in Russian', max_length=511)
     desc_en: str = Field(..., description='The item description in English', max_length=511)
-    count: int = Field(..., description='The amount of this item in storage', gt=1)
+    count: int = Field(..., description='The amount of this item in storage', ge=1)
 
 
 class ItemUpdate(TrimModel):
@@ -231,4 +231,4 @@ class RequestItemList(TrimModel):
 class Request(RequestCommon):
     item_id: int = Field(..., description='The item unique identifier', gt=0)
     user_id: int = Field(..., description='The requester unique identifier', gt=0)
-    notification_sent_at: datetime = Field(..., description='The notification sent datetime')
+    notification_sent_at: datetime = Field(None, description='The notification sent datetime')

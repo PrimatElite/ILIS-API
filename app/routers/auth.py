@@ -4,8 +4,9 @@ from fastapi.routing import APIRouter
 from sqlalchemy.orm import Session
 
 from .. import schemas
+from ..cruds import CRUDUsers
 from ..dependencies import get_db
-from ..models import EnumLoginService, EnumUserRole, Users
+from ..models import EnumLoginService, EnumUserRole
 from ..oauth2 import get_service
 
 
@@ -57,12 +58,12 @@ def get_token(
     #     errors = {e.args[0]: f'{help_} Missing required parameter in the query string'}
     #     api.abort(HTTPStatus.BAD_REQUEST, 'Input payload validation failed', errors=errors)
 
-    user = Users.get_user_by_login(service.get_id_from_info(user_info), service_name, db)
+    user = CRUDUsers.get_user_by_login(db, service.get_id_from_info(user_info), service_name)
 
     if user is None:
         data = service.transform_info(user_info)
         data['role'] = EnumUserRole.USER
-        user = Users.create(data, db)
+        user = CRUDUsers.create(db, data)
 
     access_token, refresh_token, expires_in = token_response
     return {'access_token': access_token, 'refresh_token': refresh_token, 'expires_in': expires_in, 'user': user}

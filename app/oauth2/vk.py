@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 from typing import Tuple
 
 from .base import BaseOAuth2, TokenResponse
-from ..models import EnumLoginService, Users
+from ..cruds import CRUDUsers
+from ..models import EnumLoginService, ORMUsers
 from ..config import Config
 
 
@@ -60,7 +61,7 @@ class VKOAuth2(BaseOAuth2):
     def transform_info(cls, info: dict) -> dict:
         data = {
             'login_id': cls.get_id_from_info(info),
-            'login_type': EnumLoginService.VK.name,
+            'login_type': EnumLoginService.VK,
             'name': info['first_name'],
             'surname': info['last_name'],
             'avatar': info['photo_max']
@@ -80,8 +81,8 @@ class VKOAuth2(BaseOAuth2):
         return response_data['response'][0]
 
     @classmethod
-    def get_user_by_id(cls, login_id: str, db: Session) -> Users:
-        user = Users.get_user_by_login(login_id, EnumLoginService.VK.name, db)
+    def get_user_by_id(cls, db: Session, login_id: str) -> ORMUsers:
+        user = CRUDUsers.get_user_by_login(db, login_id, EnumLoginService.VK)
         if user is not None:
             return user
         raise HTTPException(status.HTTP_404_NOT_FOUND, 'User not found')

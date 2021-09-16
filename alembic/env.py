@@ -6,7 +6,7 @@ from sqlalchemy import pool
 from alembic import context
 
 from app.config import Config
-from app.models import DeclarativeBase
+from app.models import ORMBase
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -21,7 +21,7 @@ fileConfig(config.config_file_name)
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 config.set_main_option('sqlalchemy.url', Config.SQLALCHEMY_DATABASE_URI)
-target_metadata = DeclarativeBase.metadata
+target_metadata = ORMBase.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

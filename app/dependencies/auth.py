@@ -5,7 +5,7 @@ from typing import Type
 
 from .db import get_db
 from ..oauth2 import BaseOAuth2, get_service as get_service_, validate_service
-from ..models import EnumUserRole, Users
+from ..models import EnumUserRole, ORMUsers
 
 
 apiKey_scheme = APIKeyHeader(name='authorization',
@@ -33,12 +33,12 @@ def get_access_token(key: str = Depends(_get_key)) -> str:
 
 def get_current_user(service: Type[BaseOAuth2] = Depends(get_service),
                      access_token: str = Depends(get_access_token),
-                     db: Session = Depends(get_db)) -> Users:
+                     db: Session = Depends(get_db)) -> ORMUsers:
     validation_data = service.validate_token(access_token)
-    return service.get_user_by_id(service.get_id_from_info(validation_data), db)
+    return service.get_user_by_id(db, service.get_id_from_info(validation_data))
 
 
-def get_admin(user: Users = Depends(get_current_user)) -> Users:
+def get_admin(user: ORMUsers = Depends(get_current_user)) -> ORMUsers:
     if not user.role == EnumUserRole.ADMIN:
         raise HTTPException(status.HTTP_403_FORBIDDEN, 'Admin access required')
     return user

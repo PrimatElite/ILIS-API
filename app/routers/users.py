@@ -4,8 +4,9 @@ from sqlalchemy.orm import Session
 from typing import List, Type
 
 from .. import schemas
+from ..cruds import CRUDUsers
 from ..dependencies import get_access_token, get_admin, get_current_user, get_db, get_service
-from ..models import Users
+from ..models import ORMUsers
 from ..oauth2 import BaseOAuth2
 
 
@@ -24,7 +25,7 @@ router = APIRouter(prefix='/users', tags=['users'])
 )
 def get_users(db: Session = Depends(get_db)):
     """Get all users"""
-    return Users.get_users(db)
+    return CRUDUsers.get_list(db)
 
 
 @router.post(
@@ -43,7 +44,7 @@ def create_user(
         db: Session = Depends(get_db)
 ):
     """Create new user"""
-    user = Users.create(payload.dict(), db)
+    user = CRUDUsers.create(db, payload.dict())
     return user
 
 
@@ -63,7 +64,7 @@ def update_user(
         db: Session = Depends(get_db)
 ):
     """Update user"""
-    user = Users.update(payload.dict(), db)
+    user = CRUDUsers.update(db, payload.dict())
     return user
 
 
@@ -83,14 +84,14 @@ def get_user_me(
 ):
     """Get user by token"""
     validation_data = service.validate_token(access_token)
-    user = service.get_user_by_id(service.get_id_from_info(validation_data), db)
+    user = service.get_user_by_id(db, service.get_id_from_info(validation_data))
     data = service.transform_info(validation_data)
     data_to_update = {field: value for field, value in data.items() if getattr(user, field, '') == ''}
     if data['avatar'] != user.avatar:
         data_to_update['avatar'] = data['avatar']
     if len(data_to_update) > 0:
         data_to_update['user_id'] = user.user_id
-        user = Users.update(data_to_update, db)
+        user = CRUDUsers.update(db, data_to_update)
     return user
 
 
@@ -105,13 +106,13 @@ def get_user_me(
 )
 def update_user_me(
         payload: schemas.UserUpdateMe,
-        user: Users = Depends(get_current_user),
+        user: ORMUsers = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
     """Update user by token"""
     data = payload.dict()
     data['user_id'] = user.user_id
-    user = Users.update(data, db)
+    user = CRUDUsers.update(db, data)
     return user
 
 
@@ -128,7 +129,7 @@ def get_user_by_id(
         db: Session = Depends(get_db)
 ):
     """Get user by id"""
-    user = Users.check_exist(user_id, db)
+    user = CRUDUsers.check_existence(db, user_id)
     return user
 
 
@@ -148,5 +149,5 @@ def delete_user_by_id(
         db: Session = Depends(get_db)
 ):
     """Delete user by id"""
-    Users.delete(user_id, db)
+    CRUDUsers.delete(db, user_id)
     return ''

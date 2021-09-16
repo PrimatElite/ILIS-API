@@ -2,7 +2,7 @@ from collections import namedtuple
 from sqlalchemy.orm import Session
 from typing import Tuple
 
-from ..models import Users
+from ..models import ORMUsers
 
 
 TokenResponse = namedtuple('TokenResponse', ['access_token', 'refresh_token', 'expires_in'])
@@ -43,5 +43,5 @@ class BaseOAuth2:
         raise NotImplementedError
 
     @classmethod
-    def get_user_by_id(cls, login_id: str, db: Session) -> Users:
+    def get_user_by_id(cls, db: Session, login_id: str) -> ORMUsers:
         raise NotImplementedError

@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from .. import schemas
+from ..cruds import CRUDItems, CRUDRequests
 from ..dependencies import get_admin, get_current_user, get_db
-from ..models import EnumRequestStatus, Items, Requests, Users
+from ..models import EnumRequestStatus, ORMUsers
 
 
 router = APIRouter(prefix='/requests', tags=['requests'])
@@ -24,7 +25,7 @@ router = APIRouter(prefix='/requests', tags=['requests'])
 )
 def get_requests(db: Session = Depends(get_db)):
     """Get all requests"""
-    return Requests.get_requests(db)
+    return CRUDRequests.get_list(db)
 
 
 @router.post(
@@ -44,7 +45,7 @@ def create_request(
         db: Session = Depends(get_db)
 ):
     """Create new request"""
-    request = Requests.create(payload.dict(), db)
+    request = CRUDRequests.create(db, payload.dict())
     return request
 
 
@@ -64,7 +65,7 @@ def update_request(
         db: Session = Depends(get_db)
 ):
     """Update request"""
-    request = Requests.update(payload.dict(), db)
+    request = CRUDRequests.update(db, payload.dict())
     return request
 
 
@@ -77,11 +78,11 @@ def update_request(
         404: {'description': 'Not found'}
     }
 )
-def get_requests_me(user: Users = Depends(get_current_user)):
+def get_requests_me(user: ORMUsers = Depends(get_current_user)):
     """Get own requests"""
     requests = user.requests
     exclude = {i: {'item': {'owner': {'email', 'phone'}}}
-               for i, request in enumerate(requests) if not request.is_in_lending}
+               for i, request in enumerate(requests) if not request.in_lending}
     if len(exclude.keys()) == 0:
         return requests
     else:
@@ -92,7 +93,7 @@ def get_requests_me(user: Users = Depends(get_current_user)):
 @router.post(
     '/me',
     status_code=201,
-    response_model=schemas.Request,
+    response_model=schemas.RequestMe,
     responses={
         201: {'description': 'Request created'},
         401: {'description': 'Unauthorized'},
@@ -101,20 +102,21 @@ def get_requests_me(user: Users = Depends(get_current_user)):
     }
 )
 def create_request_me(
-        payload: schemas.RequestCreate,
-        user: Users = Depends(get_current_user),
+        payload: schemas.RequestCreateMe,
+        user: ORMUsers = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
     """Create new request"""
     data = payload.dict()
     data['user_id'] = user.user_id
-    request = Requests.create(data, db)
-    return request
+    request = CRUDRequests.create(db, data)
+    return Response(schemas.RequestMe.from_orm(request).json(exclude={'item': {'owner': {'email', 'phone'}}}),
+                    media_type='application/json')
 
 
 @router.put(
     '/me',
-    response_model=schemas.Request,
+    response_model=schemas.RequestMe,
     responses={
         200: {'description': 'Request updated'},
         401: {'description': 'Unauthorized'},
@@ -124,21 +126,25 @@ def create_request_me(
 )
 def update_request_me(
         payload: schemas.RequestUpdateMe,
-        user: Users = Depends(get_current_user),
+        user: ORMUsers = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
     """Update request"""
-    request = Requests.check_exist(payload.request_id, db)
+    request = CRUDRequests.check_existence(db, payload.request_id)
     if payload.status in [EnumRequestStatus.CANCELED]:
         if request.user_id != user.user_id:
             raise HTTPException(status.HTTP_403_FORBIDDEN, f'Request {payload.request_id} is not yours')
     else:
         if request.item.owner.user_id != user.user_id:
             raise HTTPException(status.HTTP_403_FORBIDDEN, f'Item {request.item_id} is not yours')
-    request = Requests.update(payload.dict(), db)
+    request = CRUDRequests.update(db, payload.dict())
     if payload.status != request.status:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, 'Incorrect status supplied')
-    return request
+    if request.in_lending:
+        return request
+    else:
+        return Response(schemas.RequestMe.from_orm(request).json(exclude={'item': {'owner': {'email', 'phone'}}}),
+                        media_type='application/json')
 
 
 @router.get(
@@ -153,16 +159,16 @@ def update_request_me(
 )
 def get_requests_me_by_item(
         item_id: int = Path(..., description='The identifier of the item to get requests'),
-        user: Users = Depends(get_current_user),
+        user: ORMUsers = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
     """Get requests by own item"""
-    item = Items.check_exist(item_id, db)
+    item = CRUDItems.check_existence(db, item_id)
     if item.owner.user_id != user.user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Item {item_id} is not yours')
     requests = item.requests
     exclude = {i: {'requester': {'email', 'phone'}}
-               for i, request in enumerate(requests) if not request.is_in_lending}
+               for i, request in enumerate(requests) if not request.in_lending}
     if len(exclude.keys()) == 0:
         return requests
     else:
@@ -183,17 +189,17 @@ def get_requests_me_by_item(
 def get_request_me_by_item_by_id(
         item_id: int = Path(..., description='The identifier of the item to get request'),
         request_id: int = Path(..., description='The identifier of the request to get'),
-        user: Users = Depends(get_current_user),
+        user: ORMUsers = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
     """Get request by own item and id"""
-    item = Items.check_exist(item_id, db)
+    item = CRUDItems.check_existence(db, item_id)
     if item.owner.user_id != user.user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Item {item_id} is not yours')
-    request = Requests.check_exist(request_id, db)
+    request = CRUDRequests.check_existence(db, request_id)
     if request.item_id != item_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Request {request_id} is not for item {item_id}')
-    if request.is_in_lending:
+    if request.in_lending:
         return request
     else:
         return Response(schemas.RequestItem.from_orm(request).json(exclude={'requester': {'email', 'phone'}}),
@@ -212,14 +218,14 @@ def get_request_me_by_item_by_id(
 )
 def get_request_me_by_id(
         request_id: int = Path(..., description='The identifier of the request to get'),
-        user: Users = Depends(get_current_user),
+        user: ORMUsers = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
     """Get own request by id"""
-    request = Requests.check_exist(request_id, db)
+    request = CRUDRequests.check_existence(db, request_id)
     if request.user_id != user.user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Request {request_id} is not yours')
-    if request.is_in_lending:
+    if request.in_lending:
         return request
     else:
         return Response(schemas.RequestMe.from_orm(request).json(exclude={'item': {'owner': {'email', 'phone'}}}),
@@ -242,5 +248,5 @@ def delete_request_by_id(
         db: Session = Depends(get_db)
 ):
     """Delete request by id"""
-    Requests.delete(request_id, db)
+    CRUDRequests.delete(db, request_id)
     return ''
