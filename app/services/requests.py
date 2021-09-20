@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 from typing import List
 
-from .base import CRUDBase, DictStrAny, Session
-from .items import CRUDItems
-from .users import CRUDUsers
+from .base import Base, DictStrAny, Session
+from .items import Items
+from .users import Users
 from ..celery import has_reserved_task
 from ..config import Config
 from ..exceptions import ItemNotFoundError, RequestDurationError, RequestIntervalError, RequestItemError, \
@@ -12,7 +12,7 @@ from ..models import EnumRequestStatus, ORMRequests, REQUEST_STATUS_TRANSITION_R
 from ..redis import redis_client
 
 
-class CRUDRequests(CRUDBase):
+class Requests(Base):
     model = ORMRequests
 
     fields_to_update = [ORMRequests.status, ORMRequests.notification_sent_at]
@@ -24,11 +24,11 @@ class CRUDRequests(CRUDBase):
 
     @classmethod
     def _check_creation(cls, db: Session, data: DictStrAny):
-        item = CRUDItems.get_by_id(db, data['item_id'])
+        item = Items.get_by_id(db, data['item_id'])
         if item is None:
             raise ItemNotFoundError(data['item_id'])
 
-        user = CRUDUsers.get_by_id(db, data['user_id'])
+        user = Users.get_by_id(db, data['user_id'])
         if user is None:
             raise UserNotFoundError(data['user_id'])
 

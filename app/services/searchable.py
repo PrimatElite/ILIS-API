@@ -1,12 +1,12 @@
 from sqlalchemy import case, event
 from typing import List
 
-from .base import CRUDBase, Session
+from .base import Base, Session
 from ..models import ORMSearchable, SessionLocal
 from ..search import elasticsearch
 
 
-class CRUDSearchable(CRUDBase):
+class Searchable(Base):
     @classmethod
     def search(cls, db: Session, query: str) -> List[ORMSearchable]:
         ids = query_index(cls.model.__tablename__, query)
@@ -60,5 +60,5 @@ def remove_from_index(index: str, obj: ORMSearchable):
     elasticsearch.delete(index=index, id=getattr(obj, f'{index[:-1]}_id'))
 
 
-event.listen(SessionLocal, 'before_commit', CRUDSearchable.before_commit)
-event.listen(SessionLocal, 'after_commit', CRUDSearchable.after_commit)
+event.listen(SessionLocal, 'before_commit', Searchable.before_commit)
+event.listen(SessionLocal, 'after_commit', Searchable.after_commit)

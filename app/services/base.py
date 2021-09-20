@@ -11,7 +11,7 @@ from ..utils import any_in
 DictStrAny = Dict[str, Any]
 
 
-class CRUDBase:
+class Base:
     model = ORMBase
 
     fields_to_update: List[Column] = []

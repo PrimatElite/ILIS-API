@@ -1,14 +1,14 @@
 from sqlalchemy import Column
 from typing import List
 
-from .base import CRUDBase, DictStrAny, Session
-from .users import CRUDUsers
+from .base import Base, DictStrAny, Session
+from .users import Users
 from ..exceptions import UserNotFoundError
 from ..models import ORMStorages
 from ..utils import all_in
 
 
-class CRUDStorages(CRUDBase):
+class Storages(Base):
     model = ORMStorages
 
     _location_fields_to_update: List[Column] = [ORMStorages.latitude, ORMStorages.longitude, ORMStorages.address]
@@ -17,7 +17,7 @@ class CRUDStorages(CRUDBase):
 
     @classmethod
     def _check_creation(cls, db: Session, data: DictStrAny):
-        user = CRUDUsers.get_by_id(db, data['user_id'])
+        user = Users.get_by_id(db, data['user_id'])
         if user is None:
             raise UserNotFoundError(data['user_id'])
 

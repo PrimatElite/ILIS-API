@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from .. import schemas
-from ..cruds import CRUDItems, CRUDRequests
+from ..services import Items, Requests
 from ..dependencies import get_admin, get_current_user, get_db
 from ..models import EnumRequestStatus, ORMUsers
 
@@ -25,7 +25,7 @@ router = APIRouter(prefix='/requests', tags=['requests'])
 )
 def get_requests(db: Session = Depends(get_db)):
     """Get all requests"""
-    return CRUDRequests.get_list(db)
+    return Requests.get_list(db)
 
 
 @router.post(
@@ -45,7 +45,7 @@ def create_request(
         db: Session = Depends(get_db)
 ):
     """Create new request"""
-    request = CRUDRequests.create(db, payload.dict())
+    request = Requests.create(db, payload.dict())
     return request
 
 
@@ -65,7 +65,7 @@ def update_request(
         db: Session = Depends(get_db)
 ):
     """Update request"""
-    request = CRUDRequests.update(db, payload.dict())
+    request = Requests.update(db, payload.dict())
     return request
 
 
@@ -109,7 +109,7 @@ def create_request_me(
     """Create new request"""
     data = payload.dict()
     data['user_id'] = user.user_id
-    request = CRUDRequests.create(db, data)
+    request = Requests.create(db, data)
     return Response(schemas.RequestMe.from_orm(request).json(exclude={'item': {'owner': {'email', 'phone'}}}),
                     media_type='application/json')
 
@@ -130,14 +130,14 @@ def update_request_me(
         db: Session = Depends(get_db)
 ):
     """Update request"""
-    request = CRUDRequests.check_existence(db, payload.request_id)
+    request = Requests.check_existence(db, payload.request_id)
     if payload.status in [EnumRequestStatus.CANCELED]:
         if request.user_id != user.user_id:
             raise HTTPException(status.HTTP_403_FORBIDDEN, f'Request {payload.request_id} is not yours')
     else:
         if request.item.owner.user_id != user.user_id:
             raise HTTPException(status.HTTP_403_FORBIDDEN, f'Item {request.item_id} is not yours')
-    request = CRUDRequests.update(db, payload.dict())
+    request = Requests.update(db, payload.dict())
     if payload.status != request.status:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, 'Incorrect status supplied')
     if request.in_lending:
@@ -163,7 +163,7 @@ def get_requests_me_by_item(
         db: Session = Depends(get_db)
 ):
     """Get requests by own item"""
-    item = CRUDItems.check_existence(db, item_id)
+    item = Items.check_existence(db, item_id)
     if item.owner.user_id != user.user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Item {item_id} is not yours')
     requests = item.requests
@@ -193,10 +193,10 @@ def get_request_me_by_item_by_id(
         db: Session = Depends(get_db)
 ):
     """Get request by own item and id"""
-    item = CRUDItems.check_existence(db, item_id)
+    item = Items.check_existence(db, item_id)
     if item.owner.user_id != user.user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Item {item_id} is not yours')
-    request = CRUDRequests.check_existence(db, request_id)
+    request = Requests.check_existence(db, request_id)
     if request.item_id != item_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Request {request_id} is not for item {item_id}')
     if request.in_lending:
@@ -222,7 +222,7 @@ def get_request_me_by_id(
         db: Session = Depends(get_db)
 ):
     """Get own request by id"""
-    request = CRUDRequests.check_existence(db, request_id)
+    request = Requests.check_existence(db, request_id)
     if request.user_id != user.user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Request {request_id} is not yours')
     if request.in_lending:
@@ -248,5 +248,5 @@ def delete_request_by_id(
         db: Session = Depends(get_db)
 ):
     """Delete request by id"""
-    CRUDRequests.delete(db, request_id)
+    Requests.delete(db, request_id)
     return ''

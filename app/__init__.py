@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # from . import admin, cache, celery, mail  # TODO
-from . import cruds, exceptions, models, routers
+from . import exceptions, models, routers, services
 from .config import Config
 from .utils import get_version
 
@@ -14,8 +14,8 @@ app = FastAPI(title='ILIS API', description='API for ILIS', version=get_version(
 @app.on_event('startup')
 async def startup_event():
     session = models.SessionLocal()
-    cruds.CRUDUsers.init(session)
-    cruds.CRUDItems.reindex(session)
+    services.Users.init(session)
+    services.Items.reindex(session)
     session.close()
 
 

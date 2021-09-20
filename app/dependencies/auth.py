@@ -16,7 +16,7 @@ apiKey_scheme = APIKeyHeader(name='authorization',
 def _get_key(key: str = Depends(apiKey_scheme)) -> str:
     if key is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Access token required')
-    return key
+    return key.split(' ')[-1]
 
 
 def get_service(key: str = Depends(_get_key)) -> Type[BaseOAuth2]:

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from .. import schemas
-from ..cruds import CRUDItems, CRUDStorages
+from ..services import Items, Storages
 from ..dependencies import get_admin, get_current_user, get_db, get_trimmed_query
 from ..models import ORMUsers
 
@@ -24,7 +24,7 @@ router = APIRouter(prefix='/items', tags=['items'])
 )
 def get_items(db: Session = Depends(get_db)):
     """Get all items"""
-    return CRUDItems.get_list(db)
+    return Items.get_list(db)
 
 
 @router.post(
@@ -44,7 +44,7 @@ def create_item(
         db: Session = Depends(get_db)
 ):
     """Create new item"""
-    item = CRUDItems.create(db, payload.dict())
+    item = Items.create(db, payload.dict())
     return item
 
 
@@ -64,7 +64,7 @@ def update_item(
         db: Session = Depends(get_db)
 ):
     """Update item"""
-    item = CRUDItems.update(db, payload.dict())
+    item = Items.update(db, payload.dict())
     return item
 
 
@@ -85,10 +85,10 @@ def create_item_me(
         db: Session = Depends(get_db)
 ):
     """Create new item in own storage"""
-    storage = CRUDStorages.check_existence(db, payload.storage_id)
+    storage = Storages.check_existence(db, payload.storage_id)
     if storage.user_id != user.user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Storage {payload.storage_id} is not yours')
-    item = CRUDItems.create(db, payload.dict())
+    item = Items.create(db, payload.dict())
     return item
 
 
@@ -108,10 +108,10 @@ def update_item_me(
         db: Session = Depends(get_db)
 ):
     """Update item in own storage"""
-    item = CRUDItems.check_existence(db, payload.item_id)
+    item = Items.check_existence(db, payload.item_id)
     if item.owner.user_id != user.user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Item {payload.item_id} is not yours')
-    item = CRUDItems.update(db, payload.dict())
+    item = Items.update(db, payload.dict())
     return item
 
 
@@ -131,7 +131,7 @@ def get_items_me_by_storage(
         db: Session = Depends(get_db)
 ):
     """Get items from own storage"""
-    storage = CRUDStorages.check_existence(db, storage_id)
+    storage = Storages.check_existence(db, storage_id)
     if storage.user_id != user.user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Storage {storage_id} is not yours')
     items = storage.items
@@ -154,10 +154,10 @@ def delete_item_me_by_id(
         db: Session = Depends(get_db)
 ):
     """Delete item in own storage by id"""
-    item = CRUDItems.check_existence(db, item_id)
+    item = Items.check_existence(db, item_id)
     if item.owner.user_id != user.user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Item {item_id} is not yours')
-    CRUDItems.delete(db, item_id)
+    Items.delete(db, item_id)
     return ''
 
 
@@ -177,7 +177,7 @@ def get_items_by_storage(
         db: Session = Depends(get_db)
 ):
     """Get items by storage"""
-    storage = CRUDStorages.check_existence(db, storage_id)
+    storage = Storages.check_existence(db, storage_id)
     items = storage.items
     return items
 
@@ -192,7 +192,7 @@ def search_items(
         db: Session = Depends(get_db)
 ):
     """Search items by name and description"""
-    items = CRUDItems.search(db, query)
+    items = Items.search(db, query)
     return items
 
 
@@ -209,7 +209,7 @@ def get_item_by_id(
         db: Session = Depends(get_db)
 ):
     """Get item by id"""
-    item = CRUDItems.check_existence(db, item_id)
+    item = Items.check_existence(db, item_id)
     return item
 
 
@@ -229,5 +229,5 @@ def delete_item_by_id(
         db: Session = Depends(get_db)
 ):
     """Delete item by id"""
-    CRUDItems.delete(db, item_id)
+    Items.delete(db, item_id)
     return ''

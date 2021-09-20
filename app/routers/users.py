@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List, Type
 
 from .. import schemas
-from ..cruds import CRUDUsers
+from ..services import Users
 from ..dependencies import get_access_token, get_admin, get_current_user, get_db, get_service
 from ..models import ORMUsers
 from ..oauth2 import BaseOAuth2
@@ -25,7 +25,7 @@ router = APIRouter(prefix='/users', tags=['users'])
 )
 def get_users(db: Session = Depends(get_db)):
     """Get all users"""
-    return CRUDUsers.get_list(db)
+    return Users.get_list(db)
 
 
 @router.post(
@@ -44,7 +44,7 @@ def create_user(
         db: Session = Depends(get_db)
 ):
     """Create new user"""
-    user = CRUDUsers.create(db, payload.dict())
+    user = Users.create(db, payload.dict())
     return user
 
 
@@ -64,7 +64,7 @@ def update_user(
         db: Session = Depends(get_db)
 ):
     """Update user"""
-    user = CRUDUsers.update(db, payload.dict())
+    user = Users.update(db, payload.dict())
     return user
 
 
@@ -91,7 +91,7 @@ def get_user_me(
         data_to_update['avatar'] = data['avatar']
     if len(data_to_update) > 0:
         data_to_update['user_id'] = user.user_id
-        user = CRUDUsers.update(db, data_to_update)
+        user = Users.update(db, data_to_update)
     return user
 
 
@@ -112,7 +112,7 @@ def update_user_me(
     """Update user by token"""
     data = payload.dict()
     data['user_id'] = user.user_id
-    user = CRUDUsers.update(db, data)
+    user = Users.update(db, data)
     return user
 
 
@@ -129,7 +129,7 @@ def get_user_by_id(
         db: Session = Depends(get_db)
 ):
     """Get user by id"""
-    user = CRUDUsers.check_existence(db, user_id)
+    user = Users.check_existence(db, user_id)
     return user
 
 
@@ -149,5 +149,5 @@ def delete_user_by_id(
         db: Session = Depends(get_db)
 ):
     """Delete user by id"""
-    CRUDUsers.delete(db, user_id)
+    Users.delete(db, user_id)
     return ''

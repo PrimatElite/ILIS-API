@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from typing import Tuple
 
 from .base import BaseOAuth2, TokenResponse
-from ..cruds import CRUDUsers
+from ..services import Users
 from ..models import EnumLoginService, ORMUsers
 from ..config import Config
 
@@ -82,7 +82,7 @@ class VKOAuth2(BaseOAuth2):
 
     @classmethod
     def get_user_by_id(cls, db: Session, login_id: str) -> ORMUsers:
-        user = CRUDUsers.get_user_by_login(db, login_id, EnumLoginService.VK)
+        user = Users.get_user_by_login(db, login_id, EnumLoginService.VK)
         if user is not None:
             return user
         raise HTTPException(status.HTTP_404_NOT_FOUND, 'User not found')

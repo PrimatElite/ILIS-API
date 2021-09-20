@@ -1,12 +1,12 @@
 from typing import Optional, Union
 
-from .base import CRUDBase, DictStrAny, Session
+from .base import Base, DictStrAny, Session
 from ..exceptions import UserExistingError
 from ..models import EnumLoginService, EnumUserRole, ORMUsers
 from ..utils import get_db_initialization
 
 
-class CRUDUsers(CRUDBase):
+class Users(Base):
     model = ORMUsers
 
     fields_to_update = [ORMUsers.name, ORMUsers.surname, ORMUsers.role, ORMUsers.email, ORMUsers.phone, ORMUsers.avatar]

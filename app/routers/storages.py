@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from .. import schemas
-from ..cruds import CRUDStorages, CRUDUsers
+from ..services import Storages, Users
 from ..dependencies import get_admin, get_current_user, get_db
 from ..models import ORMUsers
 
@@ -24,7 +24,7 @@ router = APIRouter(prefix='/storages', tags=['storages'])
 )
 def get_storages(db: Session = Depends(get_db)):
     """Get all storages"""
-    return CRUDStorages.get_list(db)
+    return Storages.get_list(db)
 
 
 @router.post(
@@ -44,7 +44,7 @@ def create_storage(
         db: Session = Depends(get_db)
 ):
     """Create new storage"""
-    storage = CRUDStorages.create(db, payload.dict())
+    storage = Storages.create(db, payload.dict())
     return storage
 
 
@@ -64,7 +64,7 @@ def update_storage(
         db: Session = Depends(get_db)
 ):
     """Update storage"""
-    storage = CRUDStorages.update(db, payload.dict())
+    storage = Storages.update(db, payload.dict())
     return storage
 
 
@@ -101,7 +101,7 @@ def create_storage_me(
     """Create new own storage"""
     data = payload.dict()
     data['user_id'] = user.user_id
-    storage = CRUDStorages.create(db, data)
+    storage = Storages.create(db, data)
     return storage
 
 
@@ -121,10 +121,10 @@ def update_storage_me(
         db: Session = Depends(get_db)
 ):
     """Update own storage"""
-    storage = CRUDStorages.check_existence(db, payload.storage_id)
+    storage = Storages.check_existence(db, payload.storage_id)
     if storage.user_id != user.user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Storage {payload.storage_id} is not yours')
-    storage = CRUDStorages.update(db, payload.dict())
+    storage = Storages.update(db, payload.dict())
     return storage
 
 
@@ -144,10 +144,10 @@ def delete_storage_me_by_id(
         db: Session = Depends(get_db)
 ):
     """Delete own storage by id"""
-    storage = CRUDStorages.check_existence(db, storage_id)
+    storage = Storages.check_existence(db, storage_id)
     if storage.user_id != user.user_id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f'Storage {storage_id} is not yours')
-    CRUDStorages.delete(db, storage_id)
+    Storages.delete(db, storage_id)
     return ''
 
 
@@ -167,7 +167,7 @@ def get_storages_by_user(
         db: Session = Depends(get_db)
 ):
     """Get storages by user"""
-    user = CRUDUsers.check_existence(db, user_id)
+    user = Users.check_existence(db, user_id)
     storages = user.storages
     return storages
 
@@ -188,5 +188,5 @@ def delete_storage_by_id(
         db: Session = Depends(get_db)
 ):
     """Delete storage by id"""
-    CRUDStorages.delete(db, storage_id)
+    Storages.delete(db, storage_id)
     return ''
